@@ -87,11 +87,12 @@ namespace BubbleStormTweaks
                 index.AppendLine($@"<div class=""{string.Join(" ", diffclass)}"">");
                 foreach (var decision in diff.decisions)
                 {
-                    if(decision.label != null)
+                    if(decision.label != null){
                         index.AppendLine($@"<div><b class=""relic-effect-category"">{decision.label}:</b>");
-                    if(decision.decisionTag != null)
-                        index.AppendLine($@"<span class=""relic-effect-tag"">({decision.decisionTag.displayName.Text})</span>");
-                    index.AppendLine("</div>");
+                        if(decision.decisionTag != null)
+                            index.AppendLine($@"<span class=""relic-effect-tag"">({decision.decisionTag.displayName.Text})</span>");
+                        index.AppendLine("</div>");
+                    }
                     
                     if (decision.requriedGoods?.sets.Length == 0)
                     {
