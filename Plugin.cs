@@ -29,9 +29,7 @@ namespace BubbleStormTweaks
     public class Plugin : BaseUnityPlugin
     {
         public static Plugin Instance;
-        private static Harmony harmony;
         public static Settings GameSettings => MainController.Instance.Settings;
-        private InputAction dumpAction;
 
         public static void LogInfo(object data)
         {
@@ -46,8 +44,6 @@ namespace BubbleStormTweaks
         }
 
         public static void LogError(object data) => Instance.Logger.LogError(data);
-
-        private float update = 0.0f;
 
         private KeyboardShortcut dumpKeyBind;
 
