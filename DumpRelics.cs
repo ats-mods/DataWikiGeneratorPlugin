@@ -117,6 +117,10 @@ namespace BubbleStormTweaks
 
             // BAD STUFF COLUMN
             index.AppendLine("<td><div>");
+
+            if(relic.Description != null)
+                index.Tagged("p", $"<i>{relic.Description}</i>");
+
             foreach (var tier in relic.effectsTiers.Where(tier => tier.effect.Length > 0))
             {
                 index.AppendLine($@"<div><b class=""relic-effect-category"">Every {tier.timeToStart.Minutes()}:</b></div>");
