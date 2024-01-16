@@ -3,11 +3,7 @@ using BepInEx.Configuration;
 using Eremite.Controller;
 using Eremite.Model;
 using System.Collections.Generic;
-using System.IO;
 using UnityEngine;
-using HarmonyLib;
-using UnityEngine.InputSystem;
-using Eremite.Model.Configs;
 
 namespace BubbleStormTweaks
 {
@@ -47,24 +43,12 @@ namespace BubbleStormTweaks
         public static void LogError(object data) => Instance.Logger.LogError(data);
 
         private KeyboardShortcut dumpKeyBind;
-        private Harmony harmony;
 
         private void Awake()
         {
             Instance = this;
-            harmony = Harmony.CreateAndPatchAll(typeof(Plugin));
             Logger.LogInfo($"Plugin {PluginInfo.PLUGIN_GUID} is loaded  since {this.gameObject.activeSelf}");
             dumpKeyBind = new(KeyCode.F3);
-        }
-        [HarmonyPatch(typeof(MainController), nameof(MainController.InitBuildData))]
-        [HarmonyPostfix]
-        private static void ForceExperimentalBuild(ref MainController __instance){
-            LogInfo($"Enabling experimental ATS Features on behalf of {PluginInfo.PLUGIN_GUID}");
-            var build = __instance.Build;
-            build.type = BuildType.InternalDevelopment;
-            build.isExperimental = true;
-            build.skipIntro = true;
-            build.skipTutorial = true;
         }
 
         private void Update(){
@@ -81,7 +65,6 @@ namespace BubbleStormTweaks
                 This can be done by changing the values under [Preloader.Entrypoint] in BepInEx/config/BepInEx.cfg
             */
             Logger.LogInfo($"Destroying {PluginInfo.PLUGIN_GUID} now");
-            harmony?.UnpatchSelf();
         }
     }
 }
