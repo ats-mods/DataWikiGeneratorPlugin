@@ -14,9 +14,12 @@ using Eremite.Model;
 using Eremite.Model.Effects;
 using Eremite.Model.Meta;
 using Eremite.Model.Orders;
+using Eremite.Services;
 using Eremite.WorldMap;
+using HarmonyLib;
 using Newtonsoft.Json;
 using QFSW.QC;
+using QFSW.QC.Utilities;
 using UnityEngine;
 
 namespace BubbleStormTweaks
@@ -1258,9 +1261,9 @@ a {padding-left: 4px;}
             try
             {
                 var txt = Begin(good.Name, good.Description, good.icon.Normal("good-big"));
-
+                DumpGoodPrices(good, txt);
                 if (goodInfo.ContainsKey(good.Name))
-                {
+                { 
                     txt.AppendLine($@"<h3>Produced By</h3>");
                     foreach (var recipe in FindProducersOf(good.Name))
                         DumpRecipe(txt, recipe.building, recipe, false, LinkType.Building);
@@ -1287,6 +1290,19 @@ a {padding-left: 4px;}
                 LogInfo("ERROR: good: " + good.Name);
                 Plugin.LogError(ex);
             }
+        }
+
+        private static void DumpGoodPrices(GoodModel good, StringBuilder txt){
+                var diffclasses = GameSettings.difficulties.Select(s=> "difficulty-" + s.name.Sane()).ToArray();
+                var prestige9Index = Array.IndexOf(diffclasses, diffclasses.First(s=>s.Contains("IX")));
+                var diffs1 = "filter-difficulty " + string.Join(" ", diffclasses, 0, prestige9Index);
+                var diffs2 = "filter-difficulty " + string.Join(" ", diffclasses, prestige9Index, diffclasses.Length - prestige9Index);
+                
+                var sellValue = GameMB.TradeService.GetValueInCurrency(good.Name, 1);
+                var sellValueHalved = (GameMB.TradeService as TradeService).RoundTradeValue(sellValue / 2f, 1);
+                txt.AppendLine($@"<div class=""{diffs1}""><b>Sells for:</b> {sellValue}</div>");
+                txt.AppendLine($@"<div class=""{diffs2}""><b>Sells for:</b> {sellValueHalved}</div>");
+                txt.AppendLine($@"<div><b>Purchased for:</b> {GameMB.TradeService.GetBuyValueInCurrency(good.Name, 1)}</div>");
         }
 
         public enum LinkType
