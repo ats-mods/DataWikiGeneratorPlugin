@@ -125,334 +125,7 @@ namespace BubbleStormTweaks
             DumpCommands(index);
             index.Clear();
 
-
-            foreach (var source in GameSettings.Buildings)
-            {
-                if (source is AltarModel altar) { }
-                else if (source is BlightPostModel blightPost)
-                {
-                    foreach (var recipe in blightPost.recipes)
-                    {
-                        RecipeRaw raw = Add(recipe, source, recipe.producedGood, recipe.productionTime, GetTier(recipe.Name));
-
-                        if (!recipe.RequiredGoodsNotValid())
-                        {
-                            raw.ingredients = recipe.requiredGoods;
-                            foreach (var i in raw.ingredients)
-                            {
-                                foreach (var a in i.goods)
-                                {
-                                    InfoFor(a.Name).ingredientIn.Add(raw.Id);
-                                }
-                            }
-                        }
-                    }
-
-                }
-                else if (source is CampModel camp)
-                {
-                    foreach (var recipe in camp.recipes)
-                        Add(recipe, source, recipe.refGood, recipe.productionTime, GetTier(recipe.Name));
-                }
-                else if (source is DecorationModel decoration) { }
-                else if (source is FarmfieldModel field) { }
-                else if (source is HearthModel hearth) { }
-                else if (source is HouseModel house) { }
-                else if (source is HydrantModel hydrant) { }
-                else if (source is InstitutionModel institution)
-                {
-                    foreach (var recipe in institution.recipes)
-                    {
-                        var raw = Add(source, recipe.servedNeed, 1, 1, "-");
-                        raw.ingredients = new GoodsSet[] { recipe.requiredGoods };
-                        foreach (var i in raw.ingredients)
-                        {
-                            foreach (var a in i.goods)
-                            {
-                                InfoFor(a.Name).ingredientIn.Add(raw.Id);
-                            }
-                        }
-                    }
-                }
-                else if (source is RelicModel relic) { }
-                else if (source is RoadModel road) { }
-                else if (source is StorageModel storage) { }
-                else if (source is TradingPostModel trader) { }
-                else if (source is CollectorModel collector)
-                {
-                    foreach (var recipe in collector.recipes)
-                        Add(recipe, source, recipe.producedGood, recipe.productionTime, GetTier(recipe.Name));
-                }
-                else if (source is FarmModel farm)
-                {
-                    foreach (var recipe in farm.recipes)
-                    {
-                        RecipeRaw raw = Add(recipe, source, recipe.producedGood, 0, GetTier(recipe.Name));
-                        raw.timeA = ("plant", recipe.plantingTime);
-                        raw.timeB = ("harvest", recipe.harvestTime);
-                    }
-                }
-                else if (source is GathererHutModel gatherer)
-                {
-                    foreach (var recipe in gatherer.recipes)
-                        Add(recipe, source, recipe.refGood, recipe.productionTime, GetTier(recipe.Name));
-                }
-                else if (source is MineModel mine)
-                {
-                    foreach (var recipe in mine.recipes)
-                        Add(recipe, source, recipe.producedGood, recipe.productionTime, GetTier(recipe.Name));
-                }
-                else if (source is WorkshopModel workshop)
-                {
-                    foreach (var recipe in workshop.recipes)
-                    {
-                        RecipeRaw raw = Add(recipe, source, recipe.producedGood, recipe.productionTime, GetTier(recipe.Name));
-
-                        if (!recipe.RequiredGoodsNotValid())
-                        {
-                            raw.ingredients = recipe.requiredGoods;
-                            foreach (var i in raw.ingredients)
-                            {
-                                foreach (var a in i.goods)
-                                {
-                                    InfoFor(a.Name).ingredientIn.Add(raw.Id);
-                                }
-                            }
-                        }
-                    }
-                }
-
-            }
-
-            try
-            {
-                index.Clear();
-                index.AppendLine($@"<html>{HTML_HEAD}<body>
-                                    <header>{NAV}</header><main>
-                                    <div>Click on an upgrade or level marker to see its rewards and cost to unlock.</div>
-                                    <div class=""capital-upgrade-tree"">");
-
-                int maxLevel = GameSettings.metaConfig.levels.Length;
-                for (int i = 0; i < GameSettings.capitalStructures.Length; i++)
-                {
-                    var structure = GameSettings.capitalStructures[i];
-                    int fromRow = 100, toRow = 0;
-                    foreach (var upgrade in structure.upgrades)
-                    {
-
-                        var data = new UpgradeData()
-                        {
-                            name = upgrade.Name,
-                            cost = upgrade.price.Select(curr => $"{curr.amount}x {curr.Name}").ToArray(),
-                            rewards = upgrade.rewards.Select(reward => new RewardData(reward)).ToArray(),
-                        };
-
-                        int row = 2 * (1 + (maxLevel - upgrade.requiredLevel));
-                        string cell = $"grid-column: {1 + i}; grid-row: {row}";
-                        index.AppendLine($@"<div class=""hex-img required-level-{upgrade.requiredLevel}"" style=""z-index: 2; {cell}"">{upgrade.icon.ImageScaled("capital-upgrade", 64)}</div>");
-                        index.AppendLine($@"<div class=""hex-frame reward-provider"" style=""z-index: 3; {cell}"" {data.DataAttrib("rewards")}'></div>");
-
-                        if (row < fromRow) fromRow = row;
-                        if (row > toRow) toRow = row;
-
-                    }
-
-                    index.AppendLine($@"<div class=""upgrade-track"" style=""z-index: 1; grid-column: {1 + i}; grid-row: {fromRow} / {toRow + 1}""></div>");
-
-                }
-
-                for (int i = 1; i < (maxLevel); i++)
-                {
-
-                    LevelRewards levelup = new()
-                    {
-                        name = $"Level {i + 1}",
-                        rewards = GameSettings.metaConfig.levels[i].rewards.Select(reward => new RewardData(reward)).ToArray()
-                    };
-
-                    int row = 2 * (1 + (maxLevel - i)) - 1;
-                    index.AppendLine($@"<div class=""upgrade-level reward-provider"" {levelup.DataAttrib("rewards")} style=""z-index: 1; grid-column: 1 / 8; grid-row: {row}"">Level {1 + i}</div>");
-                }
-
-                index.AppendLine($@"
-            <div class=""upgrade-preview"" style=""grid-column: 8; grid-row: 5 / 34"">
-                <div id=""upgrade-panel"">
-                    <h4 id=""upgrade-name"">Name</h4>
-                    <div id=""upgrade-cost"">
-                        <span>3 blah</span>
-                        <span>2 foo</span>
-                        <span>8 bar</span>
-                    </div>
-                    <div id=""upgrade-rewards""></div>
-                </div>
-            </div>");
-
-                index.AppendLine("</div></main></body></html>");
-                Write(index, "upgrades", "index");
-                index.Clear();
-
-            }
-            catch (Exception ex)
-            {
-                Plugin.LogError(ex);
-                throw;
-            }
-
-            try
-            {
-                index.Clear();
-                index.AppendLine($@"<html>{HTML_HEAD}<body>
-                                    <header>{NAV}</header><main>
-                                    <div>");
-                foreach (var biome in GameSettings.biomes)
-                {
-                    DumpBiome(biome);
-                    index.AppendLine($@"<div>{biome.SmallIcon()}<a href=""{biome.Name.Sane()}.html"">{(biome.displayName.HasText ? biome.displayName.Text : biome.Name.StripCategory())}</a></div>");
-                }
-
-                index.AppendLine("</div></main></body></html>");
-                Write(index, "biomes", "index");
-                index.Clear();
-
-            }
-            catch (Exception ex)
-            {
-                Plugin.LogError(ex);
-                throw;
-            }
-
-
-            index.AppendLine($@"<html>{HTML_HEAD}<body>
-            <header>{NAV}</header><main>
-            <div class=""building-categories"">");
-
-            foreach (var cat in MainController.Instance.Settings.Goods.GroupBy(g => g.category.Name))
-            {
-                index.AppendLine($@"<div class=""building-category"">");
-                index.AppendLine($@"<h2>{cat.Key}</h2>");
-                foreach (var g in cat)
-                {
-                    DumpGood(g);
-                    index.AppendLine($@"<div>{g.SmallIcon()}<a href=""{g.Name.Sane()}.html"">{g.Name.StripCategory()}</a></div>");
-                }
-                index.AppendLine($@"</div>");
-            }
-            index.AppendLine(@"</div></main></body>
-            <style>
-            body {
-                background-color: #444751;
-                color: lightgray;
-            }
-            a, header>nav a { color: lightgray; }
-            img { vertical-align: middle; }
-            a { padding-left:4px; }
-            :root { 
-                --accent: gray;
-            }
-            </style></html>");
-            Write(index, "goods", "index");
-
-            index.Clear();
-
-            index.AppendLine($@"<html>{HTML_HEAD}<body>
-            <header>{NAV}</header><main>
-            <table class=""building-categories"">");
-
-            foreach (var cat in GameSettings.Buildings
-                .GroupBy(b => Regex.Replace(b.category.Name, @"\d", ""))
-                .OrderByDescending(group => group.Sum(bm => recipeById.Values.Where(r => r.buildingModel == bm).Count())))
-            {
-                index.AppendLine($@"
-                        <tr><th class=""category-name sticky-first"" colspan=""5"">{cat.Key}</th></tr>
-                        <tr>
-                            <th class=""sticky-second"">Name</th>
-                            <th class=""sticky-second"">Produces</th>
-                            <th class=""sticky-second"">Building cost</th>
-                            <th class=""sticky-second"">Movable</th>
-                            <th class=""sticky-second"">Worker bonus</th>
-                        </tr>");
-
-
-                foreach (var b in cat)
-                {
-                    DumpBuilding(b);
-
-                    string move = "👎";
-                    if (b.movable)
-                    {
-                        if (b.HasMovingCost())
-                        {
-                            move = b.movingCost.Cost("construction");
-                        }
-                        else
-                        {
-                            move = "👍 - free";
-                        }
-                    }
-                    string buildCost = b.requiredGoods.Select(g => Div(g.Cost("construction"))).GatherIn("div");
-
-                    static string MakeRecipeLine(RecipeRaw r)
-                    {
-                        if (r.output != null)
-                            return $@"{r.output.SmallIcon()} {r.tier} <a href=""{r.output.good.Link()}""> {r.output.good.displayName.Text} </a>".Surround("div");
-                        else if (r.need != null)
-                            return $@"{r.need.GetIcon().Small("need")} {r.tier} {r.outputName.StripCategory()}".Surround("div");
-                        else
-                            return "-";
-                    }
-
-                    string produces = string.Join("\n", recipeById.Values.Where(r => r.buildingModel == b).Select(MakeRecipeLine)).Surround("div");
-
-                    string bonusRaces = "-";
-                    HashSet<(string, string)> racesWithBonus = new();
-                    foreach (var tag in b.tags)
-                    {
-                        if (buildingTagToRace.TryGetValue(tag.Name, out var list))
-                        {
-                            foreach (var r in list)
-                            {
-                                string bonus = r.Item2?.FormatedDescription ?? "??";
-                                if (r.Item2 is VillagerExtraProductionChancePerkModel extraProdChance)
-                                    bonus = extraProdChance.GetAmountText() + " for double";
-                                else if (r.Item2 is VillagerExtraProductionChanceForProfessionPerkModel extraForProf)
-                                    bonus = extraForProf.GetAmountText() + " for double";
-                                else if (r.Item2 is VillagerResolveEffectPerkModel resolve)
-                                    bonus = resolve.GetAmountText() + " resolve";
-                                racesWithBonus.Add((r.Item1, bonus));
-
-                            }
-                        }
-                    }
-
-                    if (racesWithBonus.Count > 0)
-                    {
-                        bonusRaces = string.Join("\n", racesWithBonus.Select(rr => $"{GameSettings.GetRace(rr.Item1).icon.Small("race")} {rr.Item1} ({rr.Item2.Replace("Hearth_", "")})".Div()));
-                    }
-
-                    index.AppendLine($@"<tr>
-                                            <td>{b.SmallIcon()}<a href=""{b.Name.Sane()}.html"">{b.Name.StripCategory()}</a></td>
-                                            <td>{produces}</td>
-                                            <td>{buildCost}</td>
-                                            <td>{move}</td>
-                                            <td>{bonusRaces}</td>
-                                        </tr>");
-                }
-            }
-            index.AppendLine(@"</table></main></body>
-            <style>
-            body {
-                background-color: #444751;
-                color: lightgray;
-            }
-            :root { 
-                --accent: gray;
-                --text: lightgray;
-            }
-            a, header>nav a { color: lightgray; }
-            img { vertical-align: middle; }
-            a { padding-left:4px; }
-            </style></html>");
-            Write(index, "buildings", "index");
+            DumpBuildings(index);           
             index.Clear();
 
             DumpEffects(index);
@@ -560,8 +233,6 @@ namespace BubbleStormTweaks
             public BuildingModel model;
             public string Name => model.Name;
         }
-
-        private static readonly Dictionary<string, BuildingModel> buildingsByName = new();
         private static readonly Dictionary<string, RecipeRaw> recipeById = new();
         private static readonly Dictionary<string, GoodInfo> goodInfo = new();
 
@@ -662,6 +333,8 @@ namespace BubbleStormTweaks
             }
             return source;
         }
+
+
         private static void DumpCornerstones(StringBuilder index)
         {
             index.AppendLine($@"<html>{HTML_HEAD}<body>
@@ -1411,6 +1084,337 @@ a {padding-left: 4px;}
 
             index.AppendLine("</html>");
             Write(index, "orders", "index");
+        }
+
+        private static void DumpBuildings(StringBuilder index)
+        {
+             foreach (var source in GameSettings.Buildings)
+            {
+                if (source is AltarModel altar) { }
+                else if (source is BlightPostModel blightPost)
+                {
+                    foreach (var recipe in blightPost.recipes)
+                    {
+                        RecipeRaw raw = Add(recipe, source, recipe.producedGood, recipe.productionTime, GetTier(recipe.Name));
+
+                        if (!recipe.RequiredGoodsNotValid())
+                        {
+                            raw.ingredients = recipe.requiredGoods;
+                            foreach (var i in raw.ingredients)
+                            {
+                                foreach (var a in i.goods)
+                                {
+                                    InfoFor(a.Name).ingredientIn.Add(raw.Id);
+                                }
+                            }
+                        }
+                    }
+
+                }
+                else if (source is CampModel camp)
+                {
+                    foreach (var recipe in camp.recipes)
+                        Add(recipe, source, recipe.refGood, recipe.productionTime, GetTier(recipe.Name));
+                }
+                else if (source is DecorationModel decoration) { }
+                else if (source is FarmfieldModel field) { }
+                else if (source is HearthModel hearth) { }
+                else if (source is HouseModel house) { }
+                else if (source is HydrantModel hydrant) { }
+                else if (source is InstitutionModel institution)
+                {
+                    foreach (var recipe in institution.recipes)
+                    {
+                        var raw = Add(source, recipe.servedNeed, 1, 1, "-");
+                        raw.ingredients = new GoodsSet[] { recipe.requiredGoods };
+                        foreach (var i in raw.ingredients)
+                        {
+                            foreach (var a in i.goods)
+                            {
+                                InfoFor(a.Name).ingredientIn.Add(raw.Id);
+                            }
+                        }
+                    }
+                }
+                else if (source is RelicModel relic) { }
+                else if (source is RoadModel road) { }
+                else if (source is StorageModel storage) { }
+                else if (source is TradingPostModel trader) { }
+                else if (source is CollectorModel collector)
+                {
+                    foreach (var recipe in collector.recipes)
+                        Add(recipe, source, recipe.producedGood, recipe.productionTime, GetTier(recipe.Name));
+                }
+                else if (source is FarmModel farm)
+                {
+                    foreach (var recipe in farm.recipes)
+                    {
+                        RecipeRaw raw = Add(recipe, source, recipe.producedGood, 0, GetTier(recipe.Name));
+                        raw.timeA = ("plant", recipe.plantingTime);
+                        raw.timeB = ("harvest", recipe.harvestTime);
+                    }
+                }
+                else if (source is GathererHutModel gatherer)
+                {
+                    foreach (var recipe in gatherer.recipes)
+                        Add(recipe, source, recipe.refGood, recipe.productionTime, GetTier(recipe.Name));
+                }
+                else if (source is MineModel mine)
+                {
+                    foreach (var recipe in mine.recipes)
+                        Add(recipe, source, recipe.producedGood, recipe.productionTime, GetTier(recipe.Name));
+                }
+                else if (source is WorkshopModel workshop)
+                {
+                    foreach (var recipe in workshop.recipes)
+                    {
+                        RecipeRaw raw = Add(recipe, source, recipe.producedGood, recipe.productionTime, GetTier(recipe.Name));
+
+                        if (!recipe.RequiredGoodsNotValid())
+                        {
+                            raw.ingredients = recipe.requiredGoods;
+                            foreach (var i in raw.ingredients)
+                            {
+                                foreach (var a in i.goods)
+                                {
+                                    InfoFor(a.Name).ingredientIn.Add(raw.Id);
+                                }
+                            }
+                        }
+                    }
+                }
+
+            }
+
+            try
+            {
+                index.Clear();
+                index.AppendLine($@"<html>{HTML_HEAD}<body>
+                                    <header>{NAV}</header><main>
+                                    <div>Click on an upgrade or level marker to see its rewards and cost to unlock.</div>
+                                    <div class=""capital-upgrade-tree"">");
+
+                int maxLevel = GameSettings.metaConfig.levels.Length;
+                for (int i = 0; i < GameSettings.capitalStructures.Length; i++)
+                {
+                    var structure = GameSettings.capitalStructures[i];
+                    int fromRow = 100, toRow = 0;
+                    foreach (var upgrade in structure.upgrades)
+                    {
+
+                        var data = new UpgradeData()
+                        {
+                            name = upgrade.Name,
+                            cost = upgrade.price.Select(curr => $"{curr.amount}x {curr.Name}").ToArray(),
+                            rewards = upgrade.rewards.Select(reward => new RewardData(reward)).ToArray(),
+                        };
+
+                        int row = 2 * (1 + (maxLevel - upgrade.requiredLevel));
+                        string cell = $"grid-column: {1 + i}; grid-row: {row}";
+                        index.AppendLine($@"<div class=""hex-img required-level-{upgrade.requiredLevel}"" style=""z-index: 2; {cell}"">{upgrade.icon.ImageScaled("capital-upgrade", 64)}</div>");
+                        index.AppendLine($@"<div class=""hex-frame reward-provider"" style=""z-index: 3; {cell}"" {data.DataAttrib("rewards")}'></div>");
+
+                        if (row < fromRow) fromRow = row;
+                        if (row > toRow) toRow = row;
+
+                    }
+
+                    index.AppendLine($@"<div class=""upgrade-track"" style=""z-index: 1; grid-column: {1 + i}; grid-row: {fromRow} / {toRow + 1}""></div>");
+
+                }
+
+                for (int i = 1; i < (maxLevel); i++)
+                {
+
+                    LevelRewards levelup = new()
+                    {
+                        name = $"Level {i + 1}",
+                        rewards = GameSettings.metaConfig.levels[i].rewards.Select(reward => new RewardData(reward)).ToArray()
+                    };
+
+                    int row = 2 * (1 + (maxLevel - i)) - 1;
+                    index.AppendLine($@"<div class=""upgrade-level reward-provider"" {levelup.DataAttrib("rewards")} style=""z-index: 1; grid-column: 1 / 8; grid-row: {row}"">Level {1 + i}</div>");
+                }
+
+                index.AppendLine($@"
+            <div class=""upgrade-preview"" style=""grid-column: 8; grid-row: 5 / 34"">
+                <div id=""upgrade-panel"">
+                    <h4 id=""upgrade-name"">Name</h4>
+                    <div id=""upgrade-cost"">
+                        <span>3 blah</span>
+                        <span>2 foo</span>
+                        <span>8 bar</span>
+                    </div>
+                    <div id=""upgrade-rewards""></div>
+                </div>
+            </div>");
+
+                index.AppendLine("</div></main></body></html>");
+                Write(index, "upgrades", "index");
+                index.Clear();
+
+            }
+            catch (Exception ex)
+            {
+                Plugin.LogError(ex);
+                throw;
+            }
+
+            try
+            {
+                index.Clear();
+                index.AppendLine($@"<html>{HTML_HEAD}<body>
+                                    <header>{NAV}</header><main>
+                                    <div>");
+                foreach (var biome in GameSettings.biomes)
+                {
+                    DumpBiome(biome);
+                    index.AppendLine($@"<div>{biome.SmallIcon()}<a href=""{biome.Name.Sane()}.html"">{(biome.displayName.HasText ? biome.displayName.Text : biome.Name.StripCategory())}</a></div>");
+                }
+
+                index.AppendLine("</div></main></body></html>");
+                Write(index, "biomes", "index");
+                index.Clear();
+
+            }
+            catch (Exception ex)
+            {
+                Plugin.LogError(ex);
+                throw;
+            }
+
+
+            index.AppendLine($@"<html>{HTML_HEAD}<body>
+            <header>{NAV}</header><main>
+            <div class=""building-categories"">");
+
+            foreach (var cat in MainController.Instance.Settings.Goods.GroupBy(g => g.category.Name))
+            {
+                index.AppendLine($@"<div class=""building-category"">");
+                index.AppendLine($@"<h2>{cat.Key}</h2>");
+                foreach (var g in cat)
+                {
+                    DumpGood(g);
+                    index.AppendLine($@"<div>{g.SmallIcon()}<a href=""{g.Name.Sane()}.html"">{g.Name.StripCategory()}</a></div>");
+                }
+                index.AppendLine($@"</div>");
+            }
+            index.AppendLine(@"</div></main></body>
+            <style>
+            body {
+                background-color: #444751;
+                color: lightgray;
+            }
+            a, header>nav a { color: lightgray; }
+            img { vertical-align: middle; }
+            a { padding-left:4px; }
+            :root { 
+                --accent: gray;
+            }
+            </style></html>");
+            Write(index, "goods", "index");
+
+            index.Clear();
+
+            index.AppendLine($@"<html>{HTML_HEAD}<body>
+            <header>{NAV}</header><main>
+            <table class=""building-categories"">");
+
+            foreach (var cat in GameSettings.Buildings
+                .GroupBy(b => Regex.Replace(b.category.Name, @"\d", ""))
+                .OrderByDescending(group => group.Sum(bm => recipeById.Values.Where(r => r.buildingModel == bm).Count())))
+            {
+                index.AppendLine($@"
+                        <tr><th class=""category-name sticky-first"" colspan=""5"">{cat.Key}</th></tr>
+                        <tr>
+                            <th class=""sticky-second"">Name</th>
+                            <th class=""sticky-second"">Produces</th>
+                            <th class=""sticky-second"">Building cost</th>
+                            <th class=""sticky-second"">Movable</th>
+                            <th class=""sticky-second"">Worker bonus</th>
+                        </tr>");
+
+
+                foreach (var b in cat)
+                {
+                    DumpBuilding(b);
+
+                    string move = "👎";
+                    if (b.movable)
+                    {
+                        if (b.HasMovingCost())
+                        {
+                            move = b.movingCost.Cost("construction");
+                        }
+                        else
+                        {
+                            move = "👍 - free";
+                        }
+                    }
+                    string buildCost = b.requiredGoods.Select(g => Div(g.Cost("construction"))).GatherIn("div");
+
+                    static string MakeRecipeLine(RecipeRaw r)
+                    {
+                        if (r.output != null)
+                            return $@"{r.output.SmallIcon()} {r.tier} <a href=""{r.output.good.Link()}""> {r.output.good.displayName.Text} </a>".Surround("div");
+                        else if (r.need != null)
+                            return $@"{r.need.GetIcon().Small("need")} {r.tier} {r.outputName.StripCategory()}".Surround("div");
+                        else
+                            return "-";
+                    }
+
+                    string produces = string.Join("\n", recipeById.Values.Where(r => r.buildingModel == b).Select(MakeRecipeLine)).Surround("div");
+
+                    string bonusRaces = "-";
+                    HashSet<(string, string)> racesWithBonus = new();
+                    foreach (var tag in b.tags)
+                    {
+                        if (buildingTagToRace.TryGetValue(tag.Name, out var list))
+                        {
+                            foreach (var r in list)
+                            {
+                                string bonus = r.Item2?.FormatedDescription ?? "??";
+                                if (r.Item2 is VillagerExtraProductionChancePerkModel extraProdChance)
+                                    bonus = extraProdChance.GetAmountText() + " for double";
+                                else if (r.Item2 is VillagerExtraProductionChanceForProfessionPerkModel extraForProf)
+                                    bonus = extraForProf.GetAmountText() + " for double";
+                                else if (r.Item2 is VillagerResolveEffectPerkModel resolve)
+                                    bonus = resolve.GetAmountText() + " resolve";
+                                racesWithBonus.Add((r.Item1, bonus));
+
+                            }
+                        }
+                    }
+
+                    if (racesWithBonus.Count > 0)
+                    {
+                        bonusRaces = string.Join("\n", racesWithBonus.Select(rr => $"{GameSettings.GetRace(rr.Item1).icon.Small("race")} {rr.Item1} ({rr.Item2.Replace("Hearth_", "")})".Div()));
+                    }
+
+                    index.AppendLine($@"<tr>
+                                            <td>{b.SmallIcon()}<a href=""{b.Name.Sane()}.html"">{b.Name.StripCategory()}</a></td>
+                                            <td>{produces}</td>
+                                            <td>{buildCost}</td>
+                                            <td>{move}</td>
+                                            <td>{bonusRaces}</td>
+                                        </tr>");
+                }
+            }
+            index.AppendLine(@"</table></main></body>
+            <style>
+            body {
+                background-color: #444751;
+                color: lightgray;
+            }
+            :root { 
+                --accent: gray;
+                --text: lightgray;
+            }
+            a, header>nav a { color: lightgray; }
+            img { vertical-align: middle; }
+            a { padding-left:4px; }
+            </style></html>");
+            Write(index, "buildings", "index");
         }
 
         private static void DumpBuilding(BuildingModel building)
