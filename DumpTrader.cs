@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics.Tracing;
 using System.Linq;
 using System.Text;
 using Eremite;
@@ -23,15 +24,13 @@ namespace BubbleStormTweaks
         }
 
         private static void DumpTable(StringBuilder index){
-            index.AppendLine($@"<tr><th>Trader</th></tr>");
+            index.AppendLine(Html.TableColumns("Name", "Offered Goods"));
 
             foreach(var model in Plugin.GameSettings.traders){
                 var trader = new Trader(model);
                 index.Tagged("tr", trader.Dump);
             }
-
         }
-
     }
 
     public class Trader {
@@ -43,6 +42,7 @@ namespace BubbleStormTweaks
 
         public void Dump(StringBuilder index) {
             index.Tagged("td", DumpNameInfo);
+            index.Tagged("td", DumpPotentialGoods);
         }
 
         private void DumpNameInfo(StringBuilder index){
@@ -50,6 +50,23 @@ namespace BubbleStormTweaks
             index.Append("<div>");
             index.Append(model.description.Text);
             index.Append("</div>");
+        }
+
+        private void DumpPotentialGoods(StringBuilder index){
+            index.AppendLine($@"<div><b class=""relic-effect-category"">Guaranteed:</b></div>");
+            index.AppendLine(@"<div class=""to-solve-sets"">");
+            foreach(var good in model.guaranteedOfferedGoods){
+                index.Tagged("div", ()=>Ext.Cost(good, "trader"));
+            }
+            index.AppendLine(@"</div>");
+
+            index.AppendLine($@"<div><b class=""relic-effect-category"">Potential:</b> (with weight)</div>");
+            index.AppendLine(@"<div class=""to-solve-sets"">");
+            foreach(var goodWeight in model.offeredGoods){
+                var good = goodWeight.ToGood();
+                index.Tagged("div", ()=>(Ext.Cost(good, goodWeight.good, "trader")) + $"({goodWeight.weight:0})");
+            }
+            index.AppendLine(@"</div>");
         }
     }
 }

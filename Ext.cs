@@ -52,7 +52,12 @@ namespace BubbleStormTweaks
 
         public static string Cost(this GoodRef good, string costType)
         {
-            return @$"<span class=""cost-{costType}"" data-base-cost=""{good.amount}"">{good.amount}</span>× {good.SmallIcon()} <a href=""{good.good.Link()}""> {good.good.displayName.Text}</a>";
+            return Cost(good.ToGood(), good.good, costType);
+        }
+
+        public static string Cost(Good good, GoodModel model, string costType)
+        {
+            return @$"<span class=""cost-{costType}"" data-base-cost=""{good.amount}"">{good.amount}</span>× {model.SmallIcon()} <a href=""{model.Link()}""> {model.displayName.Text}</a>";
         }
 
         public static string AsSummary(this string str) => str.Surround("summary");
