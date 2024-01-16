@@ -22,7 +22,7 @@ namespace BubbleStormTweaks
         }
 
         private static void DumpTable(StringBuilder index){
-            index.AppendLine(Html.TableColumns("Name", "Offered Goods"));
+            index.AppendLine(Html.TableColumns("Name", "Sells", "Buys"));
 
             foreach(var model in Plugin.GameSettings.traders){
                 var trader = new Trader(model);
@@ -41,6 +41,7 @@ namespace BubbleStormTweaks
         public void Dump(StringBuilder index) {
             index.Tagged("td", DumpNameInfo);
             index.Tagged("td", DumpPotentialGoods);
+            index.Tagged("td", DumpDesiredGoods);
         }
 
         private void DumpNameInfo(StringBuilder index){
@@ -72,9 +73,8 @@ namespace BubbleStormTweaks
 
         private void DumpDesiredGoods(StringBuilder index){
             index.AppendLine(@"<div class=""to-solve-sets"">");
-            foreach(var goodWeight in model.offeredGoods){
-                var good = goodWeight.ToGood();
-                index.Tagged("div", ()=>(Ext.Cost(good, goodWeight.good, "trader")) + $"({goodWeight.weight:0})");
+            foreach(var model in model.desiredGoods){
+                index.Tagged("div", Ext.ShowGood(model));
             }
             index.AppendLine(@"</div>");
         }
