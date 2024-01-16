@@ -1552,6 +1552,7 @@ a {padding-left: 4px;}
                     <a href=""/data-wiki/orders"">Orders</a>
                     <a href=""/data-wiki/relics"">Glade Events</a>
                     <a href=""/data-wiki/cornerstones"">Cornerstones</a>
+                    <a href=""/data-wiki/traders"">Traders</a>
                     <a href=""/data-wiki/biomes"">Biomes</a>
                     <a href=""/data-wiki/upgrades"">Upgrades</a>
                     <a href=""/data-wiki/effects"">Effects</a>
