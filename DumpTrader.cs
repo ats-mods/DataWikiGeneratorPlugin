@@ -8,8 +8,6 @@ using Eremite.Model;
 using Eremite.Model.Effects;
 using Eremite.Model.Orders;
 using Eremite.Model.Trade;
-using Eremite.WorldMap;
-using JetBrains.Annotations;
 
 namespace BubbleStormTweaks
 {
@@ -61,6 +59,18 @@ namespace BubbleStormTweaks
             index.AppendLine(@"</div>");
 
             index.AppendLine($@"<div><b class=""relic-effect-category"">Potential:</b> (with weight)</div>");
+            index.AppendLine(@"<div class=""to-solve-sets"">");
+            foreach(var goodWeight in model.offeredGoods){
+                var good = goodWeight.ToGood();
+                index.Tagged(
+                    "div", ()=>(Ext.Cost(good, goodWeight.good, "trader"))
+                    + @$"<span class=""good-weight-addendum"">({goodWeight.weight:0})</span>"
+                );
+            }
+            index.AppendLine(@"</div>");
+        }
+
+        private void DumpDesiredGoods(StringBuilder index){
             index.AppendLine(@"<div class=""to-solve-sets"">");
             foreach(var goodWeight in model.offeredGoods){
                 var good = goodWeight.ToGood();
