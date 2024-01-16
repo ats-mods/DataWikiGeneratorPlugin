@@ -35,7 +35,7 @@ namespace BubbleStormTweaks
                 return new("Forbidden", 1);
             if (relic.dangerLevel == DangerLevel.Dangerous)
                 return new("Dangerous", 2);
-            if (relic.Name.EndsWith("Encampment") || relic.Name.EndsWith("Abandoned Cache"))
+            if (relic.displayName.Text.Contains("Encampment") || relic.displayName.Text.Contains("Abandoned Cache"))
                 return new ("Other", 3);
             if (relic.orderModel != null)
                 return new ("Ghosts", 4);
@@ -49,6 +49,7 @@ namespace BubbleStormTweaks
 
         private static void DumpRelicGroup(StringBuilder index, string groupName, List<RelicModel> relics){
             index.AppendLine($@"<h3>{groupName}</h3>");
+            if (groupName.Equals("Ghosts"))
             index.AppendLine(Html.TableColumns("Name", "Time Needed", "Materials Needed (1 per column)", "Bad Stuff"));
             relics.ForEach(relic => DumpRelic(index, relic));
         }
