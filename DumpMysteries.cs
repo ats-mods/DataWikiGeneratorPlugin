@@ -142,8 +142,8 @@ namespace BubbleStormTweaks
 
         protected override void Description(StringBuilder index){
             index.Div("flavor-text", effect.Description);
-            index.Div(null, EffectDesc);
-            index.Div(null, Conditions);
+            index.Tagged("p", EffectDesc);
+            index.Tagged("p", Conditions);
         }
 
         private void EffectDesc(StringBuilder index){
