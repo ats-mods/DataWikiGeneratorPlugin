@@ -522,9 +522,9 @@ namespace BubbleStormTweaks
                         var hasMultipleWorkingTimes = (diff.decisions.Select(d=>d.workingTime).Distinct().Count() > 1);
                         foreach (var decision in diff.decisions)
                         {
+                            index.AppendLine($@"<div class=""{string.Join(" ", diffclass)}"">");
                             if (hasMultipleWorkingTimes)
                                 index.AppendLine($@"<div><b class=""relic-effect-category"">{decision.label}:</b></div>");
-                            index.AppendLine($@"<div class=""{string.Join(" ", diffclass)}"">");
                             float baseSeconds = diff.effectTimeToStartRatio * decision.workingTime;
                             index.AppendLine(baseSeconds.Minutes().Surround("span", $@"class=""relic-time"" data-base-time=""{baseSeconds}"""));
                             index.AppendLine($@"</div>");
@@ -544,10 +544,9 @@ namespace BubbleStormTweaks
                         foreach (var decision in diff.decisions)
                         {
                             index.AppendLine($@"<div><b class=""relic-effect-category"">{decision.label}:</b>");
-                            if(decision.decisionTag != null){
-                                index.AppendLine($@"<span class=""relic-effect-tag"">({decision.decisionTag.displayName.Text})</span></div>");
-                            }
-                            index.AppendLine($@"<div class=""to-solve-sets"">");
+                            if(decision.decisionTag != null)
+                                index.AppendLine($@"<span class=""relic-effect-tag"">({decision.decisionTag.displayName.Text})</span>");
+                            index.AppendLine("</div>");
                             if (decision.requriedGoods?.sets.Length == 0)
                             {
                                 index.AppendLine($@"<div class=""to-solve-set""><em>none</em></div>");
@@ -562,11 +561,11 @@ namespace BubbleStormTweaks
                                     index.AppendLine($@"</div>");
                                 }
                             }
-                            index.AppendLine($@"</div>");
                         }
                         index.AppendLine($@"</div>");
                     }
                     index.AppendLine("</td>");
+
                     // BAD STUFF COLUMN
                     index.AppendLine("<td><div>");
                     foreach (var tier in relic.effectsTiers.Where(tier => tier.effect.Length > 0))
@@ -585,10 +584,9 @@ namespace BubbleStormTweaks
                         {
                             if (decision.workingEffects?.Length > 0)
                             {
-                                index.AppendLine($@"<div><b class=""relic-effect-category"">{decision.label}:</b></div>");
                                 List<string> diffclass = diffclasses[i];
                                 index.AppendLine($@"<div class=""{string.Join(" ", diffclass)}"">");
-                                index.AppendLine($@"<div><b class=""relic-effect-category"">While working:</b></div>");
+                                index.AppendLine($@"<div><b class=""relic-effect-category"">During '{decision.label}':</b></div>");
                                 foreach (var effect in decision.workingEffects)
                                 {
                                     index.AppendLine($@"<div class=""relic-effect"">{effect.Description}</div>");
