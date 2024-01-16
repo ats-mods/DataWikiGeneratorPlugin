@@ -61,6 +61,6 @@
 		<ItemGroup>
 			<Assembly Include="$(OutputPath)\$(AssemblyName).dll" />
 		</ItemGroup>
-		<Copy SourceFiles="@(Assembly)" DestinationFolder="$(StormPath)\BepInEx\plugins" />
+		<Copy SourceFiles="@(Assembly)" DestinationFolder="$(StormPath)\BepInEx\scripts" />
 	</Target>
 </Project>
