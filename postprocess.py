@@ -3,8 +3,9 @@ from pathlib import Path
 from PIL import Image
 import sys
 
-BASE_PATH = "D:\\UMM\\atsdata\\pngs"
+BASE_PATH = "D:\\UMM\\atsdata\\0.49\\sharedassets0.assets\\ExportedProject\\Assets\\Texture2D"
 OUT_PATH = "D:\\UMM\\projects\\data-wiki\\img"
+SPRITES_FILE = "C:\\Against the Storm\\data-wiki-raw\\sprites_used.txt"
 REPLACE = False
 
 @dataclass
@@ -58,15 +59,9 @@ class SpriteReference:
 
 
 if __name__ == '__main__':
-    # Get the path to the sprites text file from command line arguments
-    if len(sys.argv) < 2:
-        print("Usage: python main.py <sprites_file>")
-        sys.exit(1)
-    
-    sprites_file = sys.argv[1]
     
     # Open the text file containing sprite references
-    with open(sprites_file, 'r') as f:
+    with open(SPRITES_FILE, 'r') as f:
         # Read all lines from the file into a list
         lines = f.readlines()
     
