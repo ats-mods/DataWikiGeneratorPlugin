@@ -44,10 +44,10 @@ namespace BubbleStormTweaks
         }
 
         private void DumpNameInfo(StringBuilder index){
-            index.Tagged("div", ()=> model.SmallIcon() + model.displayName.Text);
-            index.Append("<div>");
-            index.Append(model.description.Text);
-            index.Append("</div>");
+            index.Tagged("div", ()=> model.SmallIcon() + @$"<span class=""pad-left"">{model.displayName.Text}</span>");
+            index.Tagged("div", @$"<b>Number of goods:</b> {model.goodsAmount.x}-{model.goodsAmount.y}");
+            index.Tagged("div", @$"<b>Arrival time:</b> {model.arrivalTime}");
+            index.Tagged("div", @$"<b>Staying time:</b> {model.stayingTime}");
         }
 
         private void DumpPotentialGoods(StringBuilder index){
@@ -64,7 +64,7 @@ namespace BubbleStormTweaks
                 var good = goodWeight.ToGood();
                 index.Tagged(
                     "div", ()=>(Ext.Cost(good, goodWeight.good, "trader"))
-                    + @$"<span class=""good-weight-addendum"">({goodWeight.weight:0})</span>"
+                    + @$"<span class=""pad-left"">({goodWeight.weight:0})</span>"
                 );
             }
             index.AppendLine(@"</div>");
