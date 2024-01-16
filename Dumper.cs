@@ -352,8 +352,9 @@ namespace BubbleStormTweaks
 
                 index.AppendLine($@"<table><tr><th>Name</th><th>Time Needed</th><th>Materials Needed (1 per column)</th><th>Bad Stuff</th></tr>");
 
-                foreach (var relic in danger)
+                foreach (var relic in danger.Where(r=>!r.Name.StartsWith("DebugNode")))
                 {
+
                     List<string>[] diffclasses = new List<string>[relic.difficulties.Length];
                     for (int i = 0; i < relic.difficulties.Length; i++)
                     {
