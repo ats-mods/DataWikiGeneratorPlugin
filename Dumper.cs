@@ -129,10 +129,10 @@ namespace BubbleStormTweaks
             MysteryDumper.Dump(index);
             index.Clear();
 
-            DumpEffects(index);
+            TraderDumper.Dump(index);
             index.Clear();
 
-            TraderDumper.Dump(index);
+            DumpEffects(index);
             index.Clear();
 
             File.WriteAllLines(Path.Combine(WikiRoot, "sprites_used.txt"), Ext.spritesUsed.Select(s => s.Render));
@@ -289,7 +289,7 @@ namespace BubbleStormTweaks
         {
             public EffectModel model;
             public HashSet<string> biomes = new();
-            public HashSet<(string, float)> traders = new();
+            public HashSet<string> traders = new();
             public HashSet<string> orders = new();
 
             public bool IsUsed() {
@@ -305,7 +305,7 @@ namespace BubbleStormTweaks
                         yield return new EffectSourceGroup()
                         {
                             _Key = "Traders",
-                            Source = traders.Select(t => GameSettings.GetTrader(t.Item1).SmallIcon()),
+                            Source = traders.Select(t => GameSettings.GetTrader(t).SmallIcon()),
                         };
                     }
 
@@ -331,7 +331,7 @@ namespace BubbleStormTweaks
 
         private static readonly Dictionary<string, EffectSource> effectSources = new();
 
-        private static EffectSource GetEffectSource(EffectModel effect)
+        public static EffectSource GetEffectSource(EffectModel effect)
         {
             if (!effectSources.TryGetValue(effect.Name, out EffectSource source))
             {

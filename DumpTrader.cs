@@ -102,6 +102,7 @@ namespace BubbleStormTweaks
             index.AppendLine("<div>");
             foreach(var drop in model.merchandise){
                 var effect = drop.reward;
+                Dumper.GetEffectSource(effect).traders.Add(model.Name);
                 index.Tagged(
                     "div", ()=>(Ext.ShowEffect(effect))
                     + @$"<span class=""pad-left"">({drop.chance:0})</span>"
