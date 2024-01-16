@@ -199,7 +199,7 @@ namespace BubbleStormTweaks
                 else if (source is MineModel mine)
                 {
                     foreach (var recipe in mine.recipes)
-                        Add(recipe, source, recipe.refGood, recipe.productionTime, GetTier(recipe.Name));
+                        Add(recipe, source, recipe.producedGood, recipe.productionTime, GetTier(recipe.Name));
                 }
                 else if (source is WorkshopModel workshop)
                 {
