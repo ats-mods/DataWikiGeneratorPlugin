@@ -131,8 +131,7 @@ namespace BubbleStormTweaks
             DumpEffects(index);
             index.Clear();
 
-            Console.WriteLine("sprite seen: " + Ext.spritesUsed.Keys.Count());
-            File.WriteAllLines(Path.Combine(WikiRoot, "sprites_used.txt"), Ext.spritesUsed.Keys.Select(s => s.Render));
+            File.WriteAllLines(Path.Combine(WikiRoot, "sprites_used.txt"), Ext.spritesUsed.Select(s => s.Render));
 
             LogInfo(" === DUMP COMPLETE ===");
         }
@@ -1211,7 +1210,7 @@ a {padding-left: 4px;}
 
                         int row = 2 * (1 + (maxLevel - upgrade.requiredLevel));
                         string cell = $"grid-column: {1 + i}; grid-row: {row}";
-                        index.AppendLine($@"<div class=""hex-img required-level-{upgrade.requiredLevel}"" style=""z-index: 2; {cell}"">{upgrade.icon.ImageScaled("capital-upgrade", 64)}</div>");
+                        index.AppendLine($@"<div class=""hex-img required-level-{upgrade.requiredLevel}"" style=""z-index: 2; {cell}"">{upgrade.icon.ImageScaled("capital-upgrade", 64, "Capital Upgrade")}</div>");
                         index.AppendLine($@"<div class=""hex-frame reward-provider"" style=""z-index: 3; {cell}"" {data.DataAttrib("rewards")}'></div>");
 
                         if (row < fromRow) fromRow = row;
@@ -1948,10 +1947,17 @@ a {padding-left: 4px;}
             public string source_image;
             public float source_x, source_y;
             public float source_w, source_h;
-
             public int out_w, out_h;
 
             public string Render => $"{group};{source_image};{source_x};{source_y};{source_w};{source_h};{out_w};{out_h}";
+
+            public String FilenameOut()
+            {
+                string filename = $"{source_image}-{out_w}x{out_h}";
+                if (source_x > 0 || source_y > 0)
+                    filename += $"-{source_x}x{source_y}";
+                return $"{filename}.png";
+            }
 
             public override bool Equals(object obj)
             {
@@ -1996,21 +2002,18 @@ a {padding-left: 4px;}
             }
         }
 
-        public static Dictionary<SpriteReference, int> spritesUsed = new();
+        public static HashSet<SpriteReference> spritesUsed = new();
 
-        public static string ImageScaled(this Sprite icon, string group, int target, string title = null)
+        public static string ImageScaled(this Sprite icon, string group, int target, string title)
         {
             Dumper.Write(icon.texture);
             float scale = (icon.textureRect.width / target);
             int w = target;
             int h = target;
-            List<(string, string)> attribs = new();
-            if (title != null)
-                attribs.Add(("title", title));
 
             SpriteReference spriteRef = new()
             {
-                group = group,
+                group = $"{group}-{icon.name}",
                 source_image = icon.texture.name,
                 source_w = icon.textureRect.width,
                 source_h = icon.textureRect.height,
@@ -2020,13 +2023,9 @@ a {padding-left: 4px;}
                 out_h = h,
             };
 
-            if (!spritesUsed.TryGetValue(spriteRef, out int id))
-            {
-                id = spritesUsed.Count;
-                spritesUsed[spriteRef] = id;
-            }
-
-            return $@"<img {string.Join(" ", attribs.Select(attrib => @$"{attrib.Item1}=""{attrib.Item2}"""))} src=""{id}.IMG_SRC"" width={w} height={h} style=""object-position: {id}.IMG_X {id}.IMG_Y; object-fit: none; width: {w}px; height: {h}px;""/>";
+            spritesUsed.Add(spriteRef);
+            string imgSrc = $"/data-wiki/img/{spriteRef.FilenameOut()}";
+            return $@"<img title=""{title}"" src=""{imgSrc}""/>";
         }
 
 
