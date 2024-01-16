@@ -42,9 +42,6 @@ namespace BubbleStormTweaks
                 foreach (var mystery in config.simpleEffects){
                     GetOrAdd(mysteries, mystery, biome);
                 }
-                foreach (var mystery in config.simpleStaticEffects){
-                    GetOrAdd(mysteries, mystery, biome);
-                }
                 foreach (var mystery in config.conditionalEffects){
                     GetOrAdd(mysteries, mystery, biome);
                 }
@@ -94,7 +91,7 @@ namespace BubbleStormTweaks
             index.Tagged("td", NameWithIcon);
             if(!Effect.IsPositive)
                 index.Tagged("td", Effect.HostilityLevel.ToString());
-            index.AppendLine(@$"<td style=""max-width:50%;"">{Effect.Description}</td>");
+            index.Tagged("td", Description);
             index.Tagged("td", BiomeIcons);
             index.Tagged("td", DifficultyCost.ToString());
         }
@@ -102,6 +99,8 @@ namespace BubbleStormTweaks
         private void NameWithIcon(StringBuilder index){
             index.Tagged("b", @$"{Effect.SmallIcon()} <span style=""pad-left:16px"">{Effect.DisplayName}</span>");
         }
+
+        protected abstract void Description(StringBuilder index);
 
         private void BiomeIcons(StringBuilder index){
             foreach (var biome in biomes){
@@ -126,6 +125,10 @@ namespace BubbleStormTweaks
         public SimpleMystery(SimpleSeasonalEffectModel effect){
             this.effect = effect;
         }
+
+        protected override void Description(StringBuilder index){
+            index.Tagged("div", effect.Description);
+        }
     }
     
     public class ConditionalMystery : Mystery {
@@ -135,6 +138,25 @@ namespace BubbleStormTweaks
 
         public ConditionalMystery(ConditionalSeasonalEffectModel effect){
             this.effect = effect;
+        }
+
+        protected override void Description(StringBuilder index){
+            index.Div("flavor-text", effect.Description);
+            index.Div(null, EffectDesc);
+            index.Div(null, Conditions);
+        }
+
+        private void EffectDesc(StringBuilder index){
+            index.Append(effect.villagerEffect.Description);
+        }
+
+        private void Conditions(StringBuilder index){
+            index.Append(string.Format($"{effect.statusText}: ", ""));
+            foreach (NeedCategoryCondition need in effect.conditions)
+			{
+				index.Append(string.Format(" {0} x{1};", need.category.displayName.Text.ToUpper(), need.amount));
+			}
+			index.Remove(index.Length - 1, 1);
         }
     }
 }

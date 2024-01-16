@@ -33,6 +33,12 @@ namespace BubbleStormTweaks
             return builder;
         }
 
+        public static StringBuilder Div(this StringBuilder builder, string divClass, string content){
+            if(divClass == null)
+                return builder.Tagged("div", content);
+            return builder.Div(divClass, s=>s.Append(content));
+        }
+
         public static StringBuilder Div(this StringBuilder builder, string divClass, Action<StringBuilder> action){
             if(divClass == null)
                 return builder.Tagged("div", action);
@@ -42,6 +48,5 @@ namespace BubbleStormTweaks
             builder.Append("</div>");
             return builder;
         }
-
     }
 }
