@@ -63,7 +63,7 @@ namespace BubbleStormTweaks
 
             index.Tagged("div", @$"<b>Subjects Killed:</b> {model.villagersKilledInAssault.x}-{model.villagersKilledInAssault.y}");
             index.Tagged("div", @$"<b>Goods stolen:</b> {model.percentageOfStolenGoods:P0}");
-            index.Tagged("div", @$"<b>Merchandise stolen:</b> {model.percentageOfStolenEffects:P0}");
+            index.Tagged("div", @$"<b>Effects stolen:</b> {model.percentageOfStolenEffects:P0}");
             foreach(var effect in model.assaultEffects){
                 index.Tagged("div", @$"<b>{effect.Name}</b>");
             }
@@ -98,7 +98,7 @@ namespace BubbleStormTweaks
         }
 
         private void DumpMerchandise(StringBuilder index){
-            index.AppendLine(@"<div class=""to-solve-sets"">");
+            index.AppendLine("<div>");
             foreach(var drop in model.merchandise){
                 var effect = drop.reward;
                 index.Tagged(
@@ -106,7 +106,7 @@ namespace BubbleStormTweaks
                     + @$"<span class=""pad-left"">({drop.chance:0})</span>"
                 );
             }
-            index.AppendLine(@"</div>");
+            index.AppendLine("</div>");
         }
     }
 }
