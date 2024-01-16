@@ -30,7 +30,7 @@ namespace BubbleStormTweaks
     {
         public static void LogInfo(object data) => Plugin.LogInfo(data);
         public static Settings GameSettings => Plugin.GameSettings;
-        public static string WikiRoot => @"C:\Against the Storm\data-wiki-raw";
+        public static string WikiRoot => @"C:\Against the Storm\data-wiki-raw\";
 
         public class RewardData
         {
@@ -459,7 +459,7 @@ namespace BubbleStormTweaks
             index.Clear();
 
             Console.WriteLine("sprite seen: " + Ext.spritesUsed.Keys.Count());
-            File.WriteAllLines($"{WikiRoot}sprites_used.txt", Ext.spritesUsed.Keys.Select(s => s.Render));
+            File.WriteAllLines(Path.Combine(WikiRoot, "sprites_used.txt"), Ext.spritesUsed.Keys.Select(s => s.Render));
 
             LogInfo(" === DUMP COMPLETE ===");
         }
