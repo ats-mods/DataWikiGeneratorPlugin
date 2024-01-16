@@ -5,6 +5,7 @@ import sys
 
 BASE_PATH = "D:\\UMM\\atsdata\\pngs"
 OUT_PATH = "D:\\UMM\\projects\\data-wiki\\img"
+REPLACE = False;
 
 @dataclass
 class SpriteReference:
@@ -40,8 +41,9 @@ class SpriteReference:
         )
 
     def process_image(self):
+        if not REPLACE and self.filename_out().exists:
+                return
         with Image.open(self.path_in) as image:
-
             # Crop the image based on canvas offset and original size
             cropped_image = image.crop(
                 (self.canvas_offset_x, image.height-self.canvas_offset_y-self.original_height, self.canvas_offset_x+self.original_width, image.height-self.canvas_offset_y)
@@ -51,7 +53,7 @@ class SpriteReference:
             resized_image = cropped_image.resize((self.target_width, self.target_height))
             
             # Save the resized image with the new filename
-            resized_image.save(str(self.filename_out()))
+            resized_image.save(self.filename_out())
 
 
 if __name__ == '__main__':
