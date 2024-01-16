@@ -6,6 +6,8 @@ using System.Linq;
 using Eremite.Services;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using System.Text.RegularExpressions;
+using Eremite.Model.Orders;
 
 namespace BubbleStormTweaks
 {
@@ -33,10 +35,12 @@ namespace BubbleStormTweaks
                 return new("Forbidden", 1);
             if (relic.dangerLevel == DangerLevel.Dangerous)
                 return new("Dangerous", 2);
+            if (relic.Name.EndsWith("Encampment") || relic.Name.EndsWith("Abandoned Cache"))
+                return new ("Other", 3);
             if (relic.orderModel != null)
                 return new ("Ghosts", 4);
 
-            return new("None", 99);
+            return new("Ruins", 99);
         }
 
         private static void DumpRelicGroup(StringBuilder index, IGrouping<Tuple<string, int>, RelicModel> group){
@@ -139,6 +143,14 @@ namespace BubbleStormTweaks
                     }
                 }
             }
+
+            if(relic.orderModel != null){
+                index.AppendLine($@"<div><b class=""relic-effect-category"">Requests:</b></div>");
+                foreach(var logic in relic.orderModel.logicsSets.SelectMany(l=>l.logics)){
+                     index.AppendLine($@"<div class=""relic-effect"">{logic.Description}</div>");
+                }
+            }
+
             index.AppendLine("</div></td></tr>");
         }
 
