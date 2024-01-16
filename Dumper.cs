@@ -2040,20 +2040,4 @@ a {padding-left: 4px;}
         public static string Small(this Sprite sprite, string group, string title = null) => sprite.ImageScaled(group, 32, title.Safe());
         public static string Normal(this Sprite sprite, string group, string title = null) => sprite.ImageScaled(group, 128, title.Safe());
     }
-
-    public class DumpPatch : IKeybindInjector
-    {
-        public static InputAction dumpAction;
-
-        public void Inject()
-        {
-            dumpAction = new("perform_data_dump", InputActionType.Button, expectedControlType: "Button");
-            dumpAction.AddBinding("<Keyboard>/tab", groups: "Keyboard");
-            Plugin.LogInfo("Added binding for dumper");
-
-            dumpAction.performed += Dumper.DoDump;
-
-            dumpAction.Enable();
-        }
-    }
 }
