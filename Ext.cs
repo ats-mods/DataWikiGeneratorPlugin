@@ -248,6 +248,7 @@ namespace BubbleStormTweaks
         public static string SmallIcon(this GoodRef good) => good.good.SmallIcon();
         public static string SmallIcon(this BuildingModel b) => b.icon.Small("building", b.displayName.Text);
         public static string SmallIcon(this EffectModel e) => e.GetIcon().Small("effect", e.DisplayName);
+        public static string SmallIcon(this ISeasonalEffectModel e) => e.Icon.Small("mystery", e.DisplayName);
 
 
 

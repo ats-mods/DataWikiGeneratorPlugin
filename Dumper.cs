@@ -123,6 +123,9 @@ namespace BubbleStormTweaks
             DumpBuildings(index);
             index.Clear();
 
+            MysteryDumper.Dump(index);
+            index.Clear();
+
             DumpEffects(index);
             index.Clear();
 
@@ -1430,6 +1433,7 @@ a {padding-left: 4px;}
                     <a href=""/data-wiki/cornerstones"">Cornerstones</a>
                     <a href=""/data-wiki/traders"">Traders</a>
                     <a href=""/data-wiki/biomes"">Biomes</a>
+                    <a href=""/data-wiki/mysteries"">Forest Mysteries</a>
                     <a href=""/data-wiki/upgrades"">Upgrades</a>
                     <a href=""/data-wiki/effects"">Effects</a>
                     <a href=""/data-wiki/console-commands"">Commands</a>
