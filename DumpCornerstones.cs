@@ -98,7 +98,7 @@ namespace BubbleStormTweaks
         }
         
         private void NameWithIcon(StringBuilder index){
-            index.Append($"{Effect.SmallIcon()}<h3 class=\"pad-left\">{Effect.DisplayName}</h3>");
+            index.Tagged("h3", @$"{Effect.SmallIcon()} <span style=""pad-left:16px"">{Effect.DisplayName}</span>");
         }
 
         public int CompareTo(Cornerstone other)

@@ -114,7 +114,7 @@ namespace BubbleStormTweaks
             DumpRelics(index);
             index.Clear();
 
-            DumpCornerstones(index);
+            CornerstoneDumper.Dump(index);
             index.Clear();
 
             DumpCommands(index);
@@ -333,137 +333,6 @@ namespace BubbleStormTweaks
                 effectSources[effect.Name] = source;
             }
             return source;
-        }
-
-
-        private static void DumpCornerstones(StringBuilder index)
-        {
-            index.AppendLine($@"<html>{HTML_HEAD}<body>
-            <header> {NAV} </header><main>
-            <div class=""cornerstone-container"">");
-
-            HashSet<string> seen = new();
-
-            foreach (var biome in GameSettings.biomes)
-            {
-                foreach (var effect in biome.seasons.SeasonRewards.SelectMany(season => season.effectsTable.effects).Select(tableEntry => tableEntry.effect))
-                {
-                    GetEffectSource(effect).biomes.Add(biome.Name);
-                }
-            }
-
-            foreach (var trader in GameSettings.traders)
-            {
-                foreach (var effect in trader.merchandise)
-                {
-                    GetEffectSource(effect.reward).traders.Add((trader.Name, effect.chance));
-                }
-            }
-
-            var m = GameSettings.GetEffect("SE Slow Woodcutting For Meat") as HookedEffectModel;
-            foreach (var hooked in m.instantEffects)
-            {
-                if (hooked is ProductionRateEffectModel rate)
-                    LogInfo(rate.amount);
-            }
-
-            foreach (var source in effectSources.Values.Where(v => v.biomes.Count > 0))
-            {
-                var effect = source.model;
-                index.AppendLine($@"<div class=""cornerstone"">");
-                index.AppendLine($@"<a class=""section-anchor"" href=""#{effect.Name.Sane()}"" id=""{effect.Name.Sane()}""><div>{effect.SmallIcon()}<h3>{effect.DisplayName}</h3></div></a>");
-                index.AppendLine($@"<p>{effect.Description}</p>");
-
-
-                if (source.traders.Count > 0)
-                {
-                    index.AppendLine($@"<h4>Sold by:</h4><div class=""biome-reward-container"">");
-                    foreach (var (trader, chance) in source.traders)
-                        index.AppendLine($@"<span class=""biome-reward"">{trader} ({chance}%)</span>");
-                    index.AppendLine($@"</div>");
-                }
-
-                index.AppendLine($@"<h4>Seasonal reward in:</h4><div class=""biome-reward-container"">");
-                foreach (var biome in source.biomes)
-                    index.AppendLine($@"<span class=""biome-reward"">{biome}</span>");
-                index.AppendLine($@"</div>");
-                index.AppendLine($@"</div>");
-            }
-            //{
-            //    index.AppendLine(@"<div class=""relic"">");
-            //    index.AppendLine($@"<h3>{relic.Name}</h3>");
-            //    index.AppendLine($@"<h5>{relic.Description}</h5>");
-
-            //    foreach (var tier in relic.effectsTiers.Where(tier => tier.effect.Length > 0))
-            //    {
-            //        index.AppendLine($@"<h4>Active after {tier.timeToStart} seconds:</h4>");
-            //        index.AppendLine($@"<ul>");
-            //        foreach (var effect in tier.effect)
-            //        {
-            //            index.AppendLine($@"<li>{effect.Description}</li>");
-            //        }
-            //        index.AppendLine($@"</ul>");
-            //    }
-
-            //    foreach (var diff in relic.difficulties)
-            //    {
-            //        index.AppendLine($@"<h4>Difficulty {diff.difficulty}: {diff.workingTimeRatio * relic.workTime} seconds</h4>");
-            //        index.AppendLine($@"<ul>");
-            //        foreach (var set in diff.requriedGoods.sets)
-            //        {
-            //            index.AppendLine($@"<li>{string.Join(" | ", set.goods.Select(good => good.amount + $@"× {good.good.icon.Small()}<a href=""{good.good.Link()}"">" + good.Name.StripCategory() + "</a>"))}</li>");
-            //        }
-            //        index.AppendLine($@"</ul>");
-            //    }
-
-            //    foreach (var reward in relic.rewardsTiers)
-            //    {
-            //        string amount = "";
-            //        if (reward.rewardsTable != null && reward.rewardsTable.effects.Length > 0)
-            //        {
-            //            var amounts = reward.rewardsTable.amounts;
-            //            amount = " " + ((amounts.x == amounts.y) ? amounts.x.ToString() : $"{amounts.x} - {amounts.y}");
-            //        }
-
-            //        index.AppendLine($@"<h3>After {reward.timeToStart} seconds get{amount}:</h3>");
-            //        index.AppendLine($@"<ul>");
-            //        if (reward.rewards != null && reward.rewards.Length > 0)
-            //            foreach (var thing in reward.rewards)
-            //                index.AppendLine($@"<li>{thing.DescriptionOrLink()}</li>");
-            //        if (reward.rewardsTable != null && reward.rewardsTable.effects.Length > 0)
-            //        {
-            //            foreach (var thing in reward.rewardsTable.effects)
-            //                index.AppendLine($@"<li>{thing.effect.DescriptionOrLink()} chance: {thing.chance}</li>");
-            //        }
-            //        index.AppendLine($@"</ul>");
-            //    }
-
-            //    index.AppendLine($@"<h3>Choose one of these after resolving:</h3>");
-            //    foreach (var rewardSet in relic.rewardsSets)
-            //    {
-            //        var amounts = rewardSet.effects.amounts;
-            //        string amount = (amounts.x == amounts.y) ? amounts.x.ToString() : $"{amounts.x} - {amounts.y}";
-            //        index.AppendLine($@"<h4>{rewardSet.label},    {amount} of:</h4>");
-            //        index.AppendLine($@"<ul>");
-            //        foreach (var thing in rewardSet.effects.effects)
-            //            index.AppendLine($@"<li>{thing.effect.DescriptionOrLink()} {thing.chance}%</li>");
-            //        index.AppendLine($@"</ul>");
-
-            //    }
-
-            //    index.AppendLine(@"</div>");
-            //}
-            index.AppendLine(@"</div></main></body>");
-            index.AppendLine(@"
-            <style>
-            img { vertical-align: middle; }
-            h3 { display:inline-block; padding-left:4px; }
-            </style>
-            <script>
-            </script>");
-
-            index.AppendLine("</html>");
-            Write(index, "cornerstones", "index");
         }
 
         private static void DumpRelics(StringBuilder index)
