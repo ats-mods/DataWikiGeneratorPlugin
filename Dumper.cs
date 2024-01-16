@@ -79,7 +79,7 @@ namespace BubbleStormTweaks
             [JsonProperty]
             public string[] costs = Array.Empty<string>();
         }
-        public static void DoDump(InputAction.CallbackContext context)
+        public static void DoDump()
         {
             LogInfo(" === DUMP STARTING ===");
             GetOrderExclusions();

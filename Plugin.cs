@@ -49,28 +49,29 @@ namespace BubbleStormTweaks
 
         private float update = 0.0f;
 
+        private KeyboardShortcut dumpKeyBind;
+
         private void Awake()
         {
             Instance = this;
-            Logger.LogInfo($"Plugin {PluginInfo.PLUGIN_GUID} is loaded");
-            SetUpKeybind();
+            Logger.LogInfo($"Plugin {PluginInfo.PLUGIN_GUID} is loaded  since {this.gameObject.activeSelf}");
+            dumpKeyBind = new(KeyCode.F3);
         }
 
-        private void SetUpKeybind(){
-            dumpAction = new("select_race_1", InputActionType.Button, expectedControlType: "Button");
-            dumpAction.AddBinding("<Keyboard>/tab", groups: "Keyboard");
-            Plugin.LogInfo("Added binding for dumper");
-
-            dumpAction.performed += Dumper.DoDump;
-            dumpAction.Enable();
+        private void Update(){
+            if (dumpKeyBind.IsDown()) Dumper.DoDump();
         }
 
         private void OnDestroy()
         {
-            Logger.LogInfo($"Destroying {PluginInfo.PLUGIN_GUID} now");
-            harmony?.UnpatchSelf();
-            // dumpAction?.Disable();
-            // dumpAction?.Dispose();
+            /*
+                Note that unless you change the BepInEx configuration, the Bepin manager GameObject is destroyed almost immediately,
+                which takes this plugin (which is a Component attached to said manager) down with it, and thus calls OnDestroy.
+                You don't want this to happen because it obviously breaks things like the Update() method.
+                Fix this by making sure the BepInEx entrypoint is set to MainController constructor in Assembly-CSharp.dll
+                This can be done by changing the values under [Preloader.Entrypoint] in BepInEx/config/BepInEx.cfg
+            */
+            Logger.LogInfo($"Destroying {PluginInfo.PLUGIN_GUID} now for {this.gameObject} since {this.gameObject.activeSelf}");
         }
     }
 }
