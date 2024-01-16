@@ -1,4 +1,12 @@
-﻿using BepInEx;
+﻿using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Reflection;
+using System.Text;
+using System.Text.RegularExpressions;
+using BepInEx;
 using Eremite;
 using Eremite.Buildings;
 using Eremite.Characters.Villagers;
@@ -13,14 +21,7 @@ using Eremite.WorldMap;
 using HarmonyLib;
 using Newtonsoft.Json;
 using QFSW.QC;
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Reflection;
-using System.Text;
-using System.Text.RegularExpressions;
+using QFSW.QC.Utilities;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -125,7 +126,7 @@ namespace BubbleStormTweaks
             DumpCommands(index);
             index.Clear();
 
-            DumpBuildings(index);           
+            DumpBuildings(index);
             index.Clear();
 
             DumpEffects(index);
@@ -153,7 +154,7 @@ namespace BubbleStormTweaks
             {
                 var attrib = t.GetCustomAttribute<CommandAttribute>();
 
-                
+
                 if (attrib != null)
                 {
                     row.Clear();
@@ -512,37 +513,61 @@ namespace BubbleStormTweaks
 
                     index.AppendLine($@"<tr><td>{relic.displayName.Text}</td>");
 
+                    // TIME NEEDED
                     index.AppendLine("<td>");
                     for (int i = 0; i < relic.difficulties.Length; i++)
                     {
                         RelicDifficulty diff = relic.difficulties[i];
                         List<string> diffclass = diffclasses[i];
-                        index.AppendLine($@"<div class=""{string.Join(" ", diffclass)}"">");
-                        float baseSeconds = diff.workingTimeRatio * relic.workTime;
-                        index.AppendLine(baseSeconds.Minutes().Surround("span", $@"class=""relic-time"" data-base-time=""{baseSeconds}"""));
-                        index.AppendLine($@"</div>");
+                        var hasMultipleWorkingTimes = (diff.decisions.Select(d=>d.workingTime).Distinct().Count() > 1);
+                        foreach (var decision in diff.decisions)
+                        {
+                            if (hasMultipleWorkingTimes)
+                                index.AppendLine($@"<div><b class=""relic-effect-category"">{decision.label}:</b></div>");
+                            index.AppendLine($@"<div class=""{string.Join(" ", diffclass)}"">");
+                            float baseSeconds = diff.effectTimeToStartRatio * decision.workingTime;
+                            index.AppendLine(baseSeconds.Minutes().Surround("span", $@"class=""relic-time"" data-base-time=""{baseSeconds}"""));
+                            index.AppendLine($@"</div>");
+                            if(!hasMultipleWorkingTimes)
+                                break;
+                        }
                     }
                     index.AppendLine("</td>");
 
+                    // MATERIALS NEEDED
                     index.AppendLine("<td>");
                     for (int i = 0; i < relic.difficulties.Length; i++)
                     {
                         RelicDifficulty diff = relic.difficulties[i];
                         List<string> diffclass = diffclasses[i];
                         index.AppendLine($@"<div class=""{string.Join(" ", diffclass)}"">");
-                        index.AppendLine($@"<div class=""to-solve-sets"">");
-                        foreach (var set in diff.requriedGoods.sets)
+                        foreach (var decision in diff.decisions)
                         {
-                            index.AppendLine($@"<div class=""to-solve-set"">");
-                            foreach (var g in set.goods)
-                                index.AppendLine(g.Cost("solve").Surround("Div"));
+                            index.AppendLine($@"<div><b class=""relic-effect-category"">{decision.label}:</b>");
+                            if(decision.decisionTag != null){
+                                index.AppendLine($@"<span class=""relic-effect-tag"">({decision.decisionTag.displayName.Text})</span></div>");
+                            }
+                            index.AppendLine($@"<div class=""to-solve-sets"">");
+                            if (decision.requriedGoods?.sets.Length == 0)
+                            {
+                                index.AppendLine($@"<div class=""to-solve-set""><em>none</em></div>");
+                            }
+                            else
+                            {
+                                foreach (var set in decision.requriedGoods.sets)
+                                {
+                                    index.AppendLine($@"<div class=""to-solve-set"">");
+                                    foreach (var g in set.goods)
+                                        index.AppendLine(g.Cost("solve").Surround("Div"));
+                                    index.AppendLine($@"</div>");
+                                }
+                            }
                             index.AppendLine($@"</div>");
                         }
                         index.AppendLine($@"</div>");
-                        index.AppendLine($@"</div>");
                     }
                     index.AppendLine("</td>");
-
+                    // BAD STUFF COLUMN
                     index.AppendLine("<td><div>");
                     foreach (var tier in relic.effectsTiers.Where(tier => tier.effect.Length > 0))
                     {
@@ -556,93 +581,30 @@ namespace BubbleStormTweaks
                     for (int i = 0; i < relic.difficulties.Length; i++)
                     {
                         RelicDifficulty diff = relic.difficulties[i];
-                        if (diff.workingEffects?.Length > 0)
+                        foreach (var decision in diff.decisions)
                         {
-                            List<string> diffclass = diffclasses[i];
-                            index.AppendLine($@"<div class=""{string.Join(" ", diffclass)}"">");
-                            index.AppendLine($@"<div><b class=""relic-effect-category"">While working:</b></div>");
-                            foreach (var effect in diff.workingEffects)
+                            if (decision.workingEffects?.Length > 0)
                             {
-                                index.AppendLine($@"<div class=""relic-effect"">{effect.Description}</div>");
+                                index.AppendLine($@"<div><b class=""relic-effect-category"">{decision.label}:</b></div>");
+                                List<string> diffclass = diffclasses[i];
+                                index.AppendLine($@"<div class=""{string.Join(" ", diffclass)}"">");
+                                index.AppendLine($@"<div><b class=""relic-effect-category"">While working:</b></div>");
+                                foreach (var effect in decision.workingEffects)
+                                {
+                                    index.AppendLine($@"<div class=""relic-effect"">{effect.Description}</div>");
+                                }
+                                index.AppendLine($@"</div>");
                             }
-                            index.AppendLine($@"</div>");
                         }
                     }
 
-                    index.AppendLine("</div></td></tr>");
+                        index.AppendLine("</div></td></tr>");
+                    }
+                    index.AppendLine("</table>");
                 }
-                index.AppendLine("</table>");
-            }
 
-            //foreach (var relic in GameSettings.Relics.OrderBy(r => r.dangerLevel))
-            //{
-            //    index.AppendLine($@"<div class=""relic"" class=""relic-danger-{relic.dangerLevel}"">");
-            //    index.AppendLine($@"<a class=""section-anchor"" href=""#{relic.Name.Sane()}"" id=""{relic.Name.Sane()}""><h3>{relic.Name}</h3></a>");
-            //    index.AppendLine($@"<h5>Glade danger level: {relic.dangerLevel}</h5>");
-            //    index.AppendLine($@"<h5>{relic.Description}</h5>");
-
-            //    foreach (var tier in relic.effectsTiers.Where(tier => tier.effect.Length > 0))
-            //    {
-            //        index.AppendLine($@"<h4>Active after {tier.timeToStart.Minutes()}:</h4>");
-            //        index.AppendLine($@"<ul>");
-            //        foreach (var effect in tier.effect)
-            //        {
-            //            index.AppendLine($@"<li>{effect.Description}</li>");
-            //        }
-            //        index.AppendLine($@"</ul>");
-            //    }
-
-            //    for (int i = 0; i < relic.difficulties.Length; i++)
-            //    {
-            //        RelicDifficulty diff = relic.difficulties[i];
-            //        index.AppendLine($@"<h4>{GameSettings.difficulties.First(d => d.index == diff.difficulty).GetDisplayName()}{(i == relic.difficulties.Length - 1 ? "+" : "")}: ⏱ {(diff.workingTimeRatio * relic.workTime).Minutes()}️</h4>");
-            //        index.AppendLine($@"<ul>");
-            //        foreach (var set in diff.requriedGoods.sets)
-            //        {
-            //            index.AppendLine($@"<li>{string.Join(" | ", set.goods.Select(good => good.Cost("construction")))}</li>");
-            //        }
-            //        index.AppendLine($@"</ul>");
-            //    }
-
-            //    foreach (var reward in relic.rewardsTiers)
-            //    {
-            //        string amount = "";
-            //        if (reward.rewardsTable != null && reward.rewardsTable.effects.Length > 0)
-            //        {
-            //            var amounts = reward.rewardsTable.amounts;
-            //            amount = " " + ((amounts.x == amounts.y) ? amounts.x.ToString() : $"{amounts.x} - {amounts.y}");
-            //        }
-
-            //        index.AppendLine($@"<h3>After {reward.timeToStart} seconds get{amount}:</h3>");
-            //        index.AppendLine($@"<ul>");
-            //        if (reward.rewards != null && reward.rewards.Length > 0)
-            //            foreach (var thing in reward.rewards)
-            //                index.AppendLine($@"<li>{thing.DescriptionOrLink()}</li>");
-            //        if (reward.rewardsTable != null && reward.rewardsTable.effects.Length > 0)
-            //        {
-            //            foreach (var thing in reward.rewardsTable.effects)
-            //                index.AppendLine($@"<li>{thing.effect.DescriptionOrLink()} chance: {thing.chance}</li>");
-            //        }
-            //        index.AppendLine($@"</ul>");
-            //    }
-
-            //    index.AppendLine($@"<h3>Choose one of these after resolving:</h3>");
-            //    foreach (var rewardSet in relic.rewardsSets)
-            //    {
-            //        var amounts = rewardSet.effects.amounts;
-            //        string amount = (amounts.x == amounts.y) ? amounts.x.ToString() : $"{amounts.x} - {amounts.y}";
-            //        index.AppendLine($@"<h4>{rewardSet.label},    {amount} of:</h4>");
-            //        index.AppendLine($@"<ul>");
-            //        foreach (var thing in rewardSet.effects.effects)
-            //            index.AppendLine($@"<li>{thing.effect.DescriptionOrLink()} {thing.chance}%</li>");
-            //        index.AppendLine($@"</ul>");
-
-            //    }
-
-            //    index.AppendLine(@"</div>");
-            //}
-            index.AppendLine(@"</div></main></body>");
-            index.AppendLine(@"
+                index.AppendLine(@"</div></main></body>");
+                index.AppendLine(@"
             <style>
 .relic {
     padding: 4px;
@@ -658,9 +620,9 @@ a {padding-left: 4px;}
             </script>
 ");
 
-            index.AppendLine("</html>");
-            Write(index, "relics", "index");
-        }
+                index.AppendLine("</html>");
+                Write(index, "relics", "index");
+            }
 
         public class OrdersGiven
         {
@@ -1087,7 +1049,7 @@ a {padding-left: 4px;}
 
         private static void DumpBuildings(StringBuilder index)
         {
-             foreach (var source in GameSettings.Buildings)
+            foreach (var source in GameSettings.Buildings)
             {
                 if (source is AltarModel altar) { }
                 else if (source is BlightPostModel blightPost)
