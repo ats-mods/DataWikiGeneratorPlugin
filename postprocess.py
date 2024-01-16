@@ -3,7 +3,7 @@ from pathlib import Path
 from PIL import Image
 import sys
 
-BASE_PATH = "D:\\UMM\\atsdata\\0.49\\sharedassets0.assets\\ExportedProject\\Assets\\Texture2D"
+BASE_PATH = "D:\\UMM\\atsdata\\0.50\\sharedassets0.assets\\ExportedProject\\Assets\\Texture2D"
 OUT_PATH = "D:\\UMM\\projects\\data-wiki\\img"
 SPRITES_FILE = "C:\\Against the Storm\\data-wiki-raw\\sprites_used.txt"
 REPLACE = False

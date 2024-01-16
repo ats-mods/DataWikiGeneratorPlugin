@@ -24,7 +24,7 @@ namespace BubbleStormTweaks
         private static void DumpTable(StringBuilder index){
             index.AppendLine(Html.TableColumns("General", "Sells", "Buys", "Perks (weighted)"));
 
-            foreach(var model in Plugin.GameSettings.traders){
+            foreach(var model in Plugin.GameSettings.traders.OrderByDescending(tm=>tm.isInWiki)){
                 var trader = new Trader(model);
                 index.Tagged("tr", trader.Dump);
             }
@@ -48,7 +48,8 @@ namespace BubbleStormTweaks
         private void DumpNameInfo(StringBuilder index){
             index.Tagged("div", ()=> model.SmallIcon() + @$"<span class=""pad-left"">{model.displayName.Text}</span>");
             index.Tagged("div", @$"<b>Number of goods:</b> {model.goodsAmount.x}-{model.goodsAmount.y}");
-            index.Tagged("div", @$"<b>Arrival time:</b> {model.arrivalTime}");
+            if(model.isInWiki)
+                index.Tagged("div", @$"<b>Arrival time:</b> {model.arrivalTime}");
             index.Tagged("div", @$"<b>Staying time:</b> {model.stayingTime}");
             index.Tagged("div", DumpWhenAssaulted);
         }

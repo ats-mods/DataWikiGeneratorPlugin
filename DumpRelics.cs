@@ -35,10 +35,14 @@ namespace BubbleStormTweaks
                 return new("Forbidden", 1);
             if (relic.dangerLevel == DangerLevel.Dangerous)
                 return new("Dangerous", 2);
+            if (relic.name.Contains("Treasure Stag") || relic.name.Contains("Rainpunk Drill"))
+                return new("Small", 3);
             if (relic.displayName.Text.Contains("Encampment") || relic.displayName.Text.Contains("Abandoned Cache"))
-                return new ("Other", 3);
+                return new ("Other", 4);
+            if (relic.interactionType == RelicInteractionType.TraderPanel)
+                return new("Trader", 5);
             if (relic.orderModel != null)
-                return new ("Ghosts", 4);
+                return new ("Ghosts", 6);
 
             return new("Ruins", 99);
         }
