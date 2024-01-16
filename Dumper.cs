@@ -540,7 +540,7 @@ a {padding-left: 4px;}
 
             txt.AppendLine($@"<details>");
             txt.AppendLine("Newcomers".AsSummary());
-            txt.AppendLine($@"<p>{biome.newcomers.minNewcomers} - {biome.newcomers.maxNewcomers} (+ any bonus) will arrive every {biome.newcomers.newComersInterval.Minutes()}, possible races:</p>");
+            txt.AppendLine($@"<p>{biome.newcomers.baseAmount} (+ {biome.newcomers.amountPerYear} per year) will arrive every {biome.newcomers.newComersInterval.Minutes()}, possible races:</p>");
 
             txt.AppendLine($@"<div class=""weighted-table"">");
             {
