@@ -1140,6 +1140,10 @@ a {padding-left: 4px;}
 
             foreach (var cat in GameSettings.Buildings
                 .GroupBy(b => Regex.Replace(b.category.Name, @"\d", ""))
+                .Where(group=>!group.Key.StartsWith("Event"))
+                .Where(group=>!group.Key.StartsWith("Debug"))
+                .Where(group=>!group.Key.StartsWith("Ruins"))
+                .Where(group=>!group.Key.StartsWith("Tutorial"))
                 .OrderByDescending(group => group.Sum(bm => recipeById.Values.Where(r => r.buildingModel == bm).Count())))
             {
                 index.AppendLine($@"
