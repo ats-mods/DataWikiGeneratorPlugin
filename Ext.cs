@@ -65,6 +65,11 @@ namespace BubbleStormTweaks
             return @$"{model.SmallIcon()} <a href=""{model.Link()}""> {model.displayName.Text}</a>";
         }
 
+        public static string ShowEffect(EffectModel model)
+        {
+            return @$"{model.SmallIcon()} <a href=""{model.Link()}""> {model.displayName.Text}</a>";
+        }
+
         public static string AsSummary(this string str) => str.Surround("summary");
 
         public static string Surround(this string str, string with)
@@ -139,6 +144,11 @@ namespace BubbleStormTweaks
                 return so.Name.Link("goods");
             else if (so is RecipeModel recipe)
                 return recipe.GetProducedGood().Link("goods");
+            else if (so is EffectModel){
+                // anchor corresponds to a header id in the effects/index.html page
+                // If you change the anchor name here, also change the anchor in DumpEffects
+                return $"../effects/#{so.Name.Sane()}";
+            }
             else
                 throw new NotSupportedException();
         }

@@ -22,7 +22,7 @@ namespace BubbleStormTweaks
         }
 
         private static void DumpTable(StringBuilder index){
-            index.AppendLine(Html.TableColumns("Name", "Sells", "Buys"));
+            index.AppendLine(Html.TableColumns("Name", "Sells", "Buys", "Cornerstones (weighted)"));
 
             foreach(var model in Plugin.GameSettings.traders){
                 var trader = new Trader(model);
@@ -42,6 +42,7 @@ namespace BubbleStormTweaks
             index.Tagged("td", DumpNameInfo);
             index.Tagged("td", DumpPotentialGoods);
             index.Tagged("td", DumpDesiredGoods);
+            index.Tagged("td", DumpMerchandise);
         }
 
         private void DumpNameInfo(StringBuilder index){
@@ -59,7 +60,7 @@ namespace BubbleStormTweaks
             }
             index.AppendLine(@"</div>");
 
-            index.AppendLine($@"<div><b class=""relic-effect-category"">Potential:</b> (with weight)</div>");
+            index.AppendLine($@"<div><b class=""relic-effect-category"">Potential:</b> (weighted)</div>");
             index.AppendLine(@"<div class=""to-solve-sets"">");
             foreach(var goodWeight in model.offeredGoods){
                 var good = goodWeight.ToGood();
@@ -75,6 +76,18 @@ namespace BubbleStormTweaks
             index.AppendLine(@"<div class=""to-solve-sets"">");
             foreach(var model in model.desiredGoods){
                 index.Tagged("div", Ext.ShowGood(model));
+            }
+            index.AppendLine(@"</div>");
+        }
+
+        private void DumpMerchandise(StringBuilder index){
+            index.AppendLine(@"<div class=""to-solve-sets"">");
+            foreach(var drop in model.merchandise){
+                var effect = drop.reward;
+                index.Tagged(
+                    "div", ()=>(Ext.ShowEffect(effect))
+                    + @$"<span class=""pad-left"">({drop.chance:0})</span>"
+                );
             }
             index.AppendLine(@"</div>");
         }

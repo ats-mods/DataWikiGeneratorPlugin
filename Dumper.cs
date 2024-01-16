@@ -780,12 +780,16 @@ a {padding-left: 4px;}
                         <header>{NAV}</header><main>");
 
             index.AppendLine($@"<table class=""effects-table"">");
-            index.AppendLine($@"<tr><th>Name</th><th>Sources</th></tr>");
+            Html.TableColumns("Icon", "Name", "Sources");
             foreach (var effectSource in effectSources.Values)
             {
                 index.AppendLine($@"<tr>");
 
-                index.AppendLine($@"<td><h4>{effectSource.model.DisplayName.Safe()}</h4></td>");
+                var model = effectSource.model;
+                var modelName = model.DisplayName.Safe();
+                index.Tagged("td", ()=> model.GetIcon() == null? "" : model.GetIcon().Normal("effect", modelName));
+                index.Tagged("td", $@"<h4 id=""{model.Name.Sane()}"">{modelName}</h4>");
+
                 index.AppendLine($@"<td class=""effect-source-cell"">");
                 foreach (var source in effectSource.Sources)
                 {
@@ -806,30 +810,6 @@ a {padding-left: 4px;}
                 index.AppendLine($@"</tr>");
             }
             index.AppendLine($@"</table>");
-
-
-            //            foreach (var effect in GameSettings.effects)
-            //            {
-            //                LogInfo(diff.Name);
-
-            //                foreach (var mod in diff.modifiers)
-            //                {
-            //                    if (!currentEfffect.ContainsKey(mod.effect.Name))
-            //                    {
-            //                        currentEfffect.Add(mod.effect.Name, mod.effect.Description);
-            //                        LogInfo("    " + mod.effect.DisplayName);
-            //                        LogInfo("        " + mod.effect.Description);
-            //                    }
-            //                }
-            //                LogInfo("");
-
-            //            }
-            //<style>
-            //</style>
-            //            <script>
-            //            </script>
-            //");
-
             index.AppendLine(@"</main></body></html>");
             Write(index, "effects", "index");
         }
