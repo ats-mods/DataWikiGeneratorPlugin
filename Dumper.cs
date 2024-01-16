@@ -547,12 +547,14 @@ namespace BubbleStormTweaks
                             if(decision.decisionTag != null)
                                 index.AppendLine($@"<span class=""relic-effect-tag"">({decision.decisionTag.displayName.Text})</span>");
                             index.AppendLine("</div>");
+                            
                             if (decision.requriedGoods?.sets.Length == 0)
                             {
-                                index.AppendLine($@"<div class=""to-solve-set""><em>none</em></div>");
+                                index.AppendLine($@"<div class=""to-solve-sets""><em>none</em></div>");
                             }
                             else
                             {
+                                index.AppendLine($@"<div class=""to-solve-sets"">");
                                 foreach (var set in decision.requriedGoods.sets)
                                 {
                                     index.AppendLine($@"<div class=""to-solve-set"">");
@@ -560,6 +562,7 @@ namespace BubbleStormTweaks
                                         index.AppendLine(g.Cost("solve").Surround("Div"));
                                     index.AppendLine($@"</div>");
                                 }
+                                index.AppendLine($@"</div>");
                             }
                         }
                         index.AppendLine($@"</div>");
