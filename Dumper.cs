@@ -286,6 +286,10 @@ namespace BubbleStormTweaks
             public HashSet<(string, float)> traders = new();
             public HashSet<string> orders = new();
 
+            public bool IsUsed() {
+                return biomes.Count > 0 || traders.Count > 0 || orders.Count > 0;
+            }
+
             public IEnumerable<IGrouping<string, string>> Sources
             {
                 get
@@ -783,11 +787,14 @@ a {padding-left: 4px;}
             Html.TableColumns("Icon", "Name", "Sources");
             foreach (var effectSource in effectSources.Values)
             {
+                if(!effectSource.IsUsed()) continue;
+
                 index.AppendLine($@"<tr>");
 
                 var model = effectSource.model;
                 var modelName = model.DisplayName.Safe();
-                index.Tagged("td", ()=> model.GetIcon() == null? "" : model.GetIcon().Normal("effect", modelName));
+                var modelIcon = model.GetIcon() == null? "" : model.SmallIcon();
+                index.AppendLine(@$"<td style=""min-width:32px;min-height:32px;"">{modelIcon}</td>");
                 index.Tagged("td", $@"<h4 id=""{model.Name.Sane()}"">{modelName}</h4>");
 
                 index.AppendLine($@"<td class=""effect-source-cell"">");
@@ -804,7 +811,7 @@ a {padding-left: 4px;}
                 index.AppendLine($@"</tr>");
 
                 index.AppendLine($@"<tr>");
-                index.AppendLine($@"<td colspan=2 class=""effect-description-cell"">");
+                index.AppendLine($@"<td colspan=3 class=""effect-description-cell"">");
                 index.AppendLine($@"<p>{effectSource.model.Description.Safe()}</p>");
                 index.AppendLine($@"</td>");
                 index.AppendLine($@"</tr>");
