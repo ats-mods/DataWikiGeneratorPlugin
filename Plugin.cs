@@ -8,6 +8,7 @@ using Eremite.Model.Orders;
 using Eremite.Services;
 using Eremite.WorldMap;
 using HarmonyLib;
+using QFSW.QC;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -56,6 +57,11 @@ namespace BubbleStormTweaks
         public void Inject(Settings settings);
     }
 
+    public interface IKeybindInjector
+    {
+        public void Inject();
+    }
+
 
     [BepInPlugin(PluginInfo.PLUGIN_GUID, PluginInfo.PLUGIN_NAME, PluginInfo.PLUGIN_VERSION)]
     public class Plugin : BaseUnityPlugin
@@ -63,6 +69,8 @@ namespace BubbleStormTweaks
         public static string Dir => Path.Combine(Directory.GetCurrentDirectory(), "BepInEx/plugins/bubblestorm");
         public Harmony harmony;
         public static Plugin Instance;
+
+        public static bool doInjectSettings = false;
 
         public static void LogInfo(object data)
         {
@@ -92,6 +100,7 @@ namespace BubbleStormTweaks
             harmony = new Harmony("bubblestorm");
 
             harmony.PatchAll(typeof(Plugin));
+
         }
 
         public static Settings GameSettings => MainController.Instance.Settings;
@@ -106,6 +115,15 @@ namespace BubbleStormTweaks
         //    Plugin.LogInfo("GetBuilding: " + modelName);
 
         //}
+
+        private static IEnumerable<T> Injectors<T>() where T : class
+        {
+            var injectorType = typeof(T);
+            foreach (var injector in Assembly.GetAssembly(typeof(Plugin)).GetTypes().Where(t => injectorType.IsAssignableFrom(t) && !t.IsAbstract))
+            {
+                yield return Activator.CreateInstance(injector) as T;
+            }
+        }
 
 
         [HarmonyPatch(typeof(MainController), nameof(MainController.InitSettings))]
@@ -124,14 +142,15 @@ namespace BubbleStormTweaks
                 }
             }
 
-            var injectorType = typeof(ISettingInjector);
-            foreach (var injector in Assembly.GetAssembly(typeof(Plugin)).GetTypes().Where(t => injectorType.IsAssignableFrom(t) && !t.IsAbstract))
+            if (doInjectSettings)
             {
-                var instance = Activator.CreateInstance(injector) as ISettingInjector;
-                instance.Inject(GameSettings);
-            }
+                foreach (var injector in Injectors<ISettingInjector>())
+                {
+                    injector.Inject(GameSettings);
+                }
 
-            InvalidateSettingsCaches();
+                InvalidateSettingsCaches();
+            }
         }
 
         private static void InvalidateSettingsCaches()
@@ -146,6 +165,16 @@ namespace BubbleStormTweaks
                     object cache = cacheField.GetValue(GameSettings);
                     cache.GetType().GetField("cache", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(cache, null);
                 }
+            }
+        }
+
+        [HarmonyPatch(typeof(InputConfig), MethodType.Constructor)]
+        [HarmonyPostfix]
+        public static void InjectKeybindings()
+        {
+            foreach (var injector in Injectors<IKeybindInjector>())
+            {
+                injector.Inject();
             }
         }
 

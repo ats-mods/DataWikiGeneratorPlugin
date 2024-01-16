@@ -1,19 +1,24 @@
 ﻿using BepInEx;
 using Eremite;
 using Eremite.Buildings;
+using Eremite.Characters.Villagers;
 using Eremite.Controller;
 using Eremite.Model;
 using Eremite.Model.Effects;
 using Eremite.Model.Meta;
 using Eremite.Model.Orders;
+using Eremite.Model.Trade;
 using Eremite.Services;
 using Eremite.WorldMap;
 using HarmonyLib;
 using Newtonsoft.Json;
+using QFSW.QC;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
 using UnityEngine;
@@ -41,7 +46,7 @@ namespace BubbleStormTweaks
             {
                 name = reward.Name;
                 description = reward.Description;
-                img = reward.Icon.Small();
+                img = reward.Icon.Small("reward");
             }
         }
 
@@ -86,9 +91,9 @@ namespace BubbleStormTweaks
                 foreach (var ch in race.characteristics)
                 {
                     if (buildingTagToRace.TryGetValue(ch.tag.Name, out var list))
-                        list.Add(race.Name);
+                        list.Add((race.Name, ch.effect));
                     else
-                        buildingTagToRace[ch.tag.Name] = new() { race.Name };
+                        buildingTagToRace[ch.tag.Name] = new() { (race.Name, ch.effect) };
                 }
             }
 
@@ -107,9 +112,6 @@ namespace BubbleStormTweaks
             Write(index, null, "index");
             index.Clear();
 
-            DumpEffects(index);
-            index.Clear();
-
             DumpOrders(index);
             index.Clear();
 
@@ -118,6 +120,10 @@ namespace BubbleStormTweaks
 
             DumpCornerstones(index);
             index.Clear();
+
+            DumpCommands(index);
+            index.Clear();
+
 
             foreach (var source in GameSettings.Buildings)
             {
@@ -242,7 +248,7 @@ namespace BubbleStormTweaks
 
                         int row = 2 * (1 + (maxLevel - upgrade.requiredLevel));
                         string cell = $"grid-column: {1 + i}; grid-row: {row}";
-                        index.AppendLine($@"<div class=""hex-img required-level-{upgrade.requiredLevel}"" style=""z-index: 2; {cell}"">{upgrade.icon.ImageScaled(64)}</div>");
+                        index.AppendLine($@"<div class=""hex-img required-level-{upgrade.requiredLevel}"" style=""z-index: 2; {cell}"">{upgrade.icon.ImageScaled("capital-upgrade", 64)}</div>");
                         index.AppendLine($@"<div class=""hex-frame reward-provider"" style=""z-index: 3; {cell}"" {data.DataAttrib("rewards")}'></div>");
 
                         if (row < fromRow) fromRow = row;
@@ -300,7 +306,7 @@ namespace BubbleStormTweaks
                 foreach (var biome in GameSettings.biomes)
                 {
                     DumpBiome(biome);
-                    index.AppendLine($@"<div>{biome.icon.Small()}<a href=""{biome.Name.Sane()}.html"">{(biome.displayName.HasText ? biome.displayName.Text : biome.Name.StripCategory())}</a></div>");
+                    index.AppendLine($@"<div>{biome.SmallIcon()}<a href=""{biome.Name.Sane()}.html"">{(biome.displayName.HasText ? biome.displayName.Text : biome.Name.StripCategory())}</a></div>");
                 }
 
                 index.AppendLine("</div></main></body></html>");
@@ -326,7 +332,7 @@ namespace BubbleStormTweaks
                 foreach (var g in cat)
                 {
                     DumpGood(g);
-                    index.AppendLine($@"<div>{g.icon.Small()}<a href=""{g.Name.Sane()}.html"">{g.Name.StripCategory()}</a></div>");
+                    index.AppendLine($@"<div>{g.SmallIcon()}<a href=""{g.Name.Sane()}.html"">{g.Name.StripCategory()}</a></div>");
                 }
                 index.AppendLine($@"</div>");
             }
@@ -387,9 +393,9 @@ namespace BubbleStormTweaks
                     static string MakeRecipeLine(RecipeRaw r)
                     {
                         if (r.output != null)
-                            return $@"{r.output.good.icon.Small()} {r.tier} <a href=""{r.output.good.Link()}""> {r.output.good.displayName.Text} </a>".Surround("div");
+                            return $@"{r.output.SmallIcon()} {r.tier} <a href=""{r.output.good.Link()}""> {r.output.good.displayName.Text} </a>".Surround("div");
                         else if (r.need != null)
-                            return $@"{r.need.GetIcon().Small()} {r.tier} {r.outputName.StripCategory()}".Surround("div");
+                            return $@"{r.need.GetIcon().Small("need")} {r.tier} {r.outputName.StripCategory()}".Surround("div");
                         else
                             return "-";
                     }
@@ -399,17 +405,31 @@ namespace BubbleStormTweaks
                     string bonusRaces = "-";
                     HashSet<(string, string)> racesWithBonus = new();
                     foreach (var tag in b.tags)
+                    {
                         if (buildingTagToRace.TryGetValue(tag.Name, out var list))
+                        {
                             foreach (var r in list)
-                                racesWithBonus.Add((r, tag.Name));
+                            {
+                                string bonus = r.Item2?.FormatedDescription ?? "??";
+                                if (r.Item2 is VillagerExtraProductionChancePerkModel extraProdChance)
+                                    bonus = extraProdChance.GetAmountText() + " for double";
+                                else if (r.Item2 is VillagerExtraProductionChanceForProfessionPerkModel extraForProf)
+                                    bonus = extraForProf.GetAmountText() + " for double";
+                                else if (r.Item2 is VillagerResolveEffectPerkModel resolve)
+                                    bonus = resolve.GetAmountText() + " resolve";
+                                racesWithBonus.Add((r.Item1, bonus));
+
+                            }
+                        }
+                    }
 
                     if (racesWithBonus.Count > 0)
                     {
-                        bonusRaces = string.Join("\n", racesWithBonus.Select(rr => $"{GameSettings.GetRace(rr.Item1).icon.Small()} {rr.Item1} ({rr.Item2.Replace("Hearth_", "")})".Div()));
+                        bonusRaces = string.Join("\n", racesWithBonus.Select(rr => $"{GameSettings.GetRace(rr.Item1).icon.Small("race")} {rr.Item1} ({rr.Item2.Replace("Hearth_", "")})".Div()));
                     }
 
                     index.AppendLine($@"<tr>
-                                            <td>{b.icon.Small()}<a href=""{b.Name.Sane()}.html"">{b.Name.StripCategory()}</a></td>
+                                            <td>{b.SmallIcon()}<a href=""{b.Name.Sane()}.html"">{b.Name.StripCategory()}</a></td>
                                             <td>{produces}</td>
                                             <td>{buildCost}</td>
                                             <td>{move}</td>
@@ -432,9 +452,63 @@ namespace BubbleStormTweaks
             a { padding-left:4px; }
             </style></html>");
             Write(index, "buildings", "index");
+            index.Clear();
+
+            DumpEffects(index);
+            index.Clear();
+
+            Console.WriteLine("sprite seen: " + Ext.spritesUsed.Keys.Count());
+            File.WriteAllLines($"{WikiRoot}sprites_used.txt", Ext.spritesUsed.Keys.Select(s => s.Render));
 
             LogInfo(" === DUMP COMPLETE ===");
         }
+
+
+        private static void DumpCommands(StringBuilder index)
+        {
+            index.AppendLine($@"<html>{HTML_HEAD}<body>
+            <header> {NAV} </header><main>
+            <div class=""console-commands-container"">");
+
+            index.AppendLine(@"<table class=""console-commands-table"">");
+            index.AppendLine(@"<tr><th>Command</th><th>Arguments</th><th>Method called</th></tr>");
+
+            List<(string name, string content)> rows = new();
+            StringBuilder row = new();
+
+            foreach (var t in typeof(GameController).Assembly.GetTypes().SelectMany(t => t.GetMembers(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static)))
+            {
+                var attrib = t.GetCustomAttribute<CommandAttribute>();
+
+                
+                if (attrib != null)
+                {
+                    row.Clear();
+                    row.AppendLine("<tr>");
+                    row.AppendLine(attrib.Alias.Surround("td"));
+                    if (t is MethodInfo method)
+                        row.AppendLine(String.Join(", ", method.GetParameters().Select(param => $"{param.Name} :{param.ParameterType.SugarName()}")).Surround("td"));
+                    else if (t is PropertyInfo prop)
+                        row.AppendLine($"value :{prop.PropertyType.SugarName()}".Surround("td"));
+                    row.AppendLine($"{t.DeclaringType.Name}.{t.Name}".Surround("td"));
+                    row.AppendLine("</tr>");
+
+                    rows.Add((attrib.Alias, row.ToString()));
+                }
+            }
+
+            foreach (var rowStr in rows.OrderBy(x => x.name).Select(x => x.content))
+            {
+                index.AppendLine(rowStr);
+            }
+
+            index.AppendLine("</table>");
+
+            index.AppendLine("</div></main></body></html>");
+
+            Write(index, "console-commands", "index");
+        }
+
         public class RecipeRaw
         {
             public RecipeRaw()
@@ -526,27 +600,67 @@ namespace BubbleStormTweaks
             return raw;
         }
 
+        public class EffectSourceGroup : IGrouping<string, string>
+        {
+            public IEnumerable<string> Source;
+            public string _Key;
+
+            public string Key => _Key;
+            public IEnumerator<string> GetEnumerator() => Source.GetEnumerator();
+            IEnumerator IEnumerable.GetEnumerator() => Source.GetEnumerator();
+        }
+
         public class EffectSource
         {
             public EffectModel model;
             public HashSet<string> biomes = new();
+            public HashSet<(string, float)> traders = new();
+            public HashSet<string> orders = new();
+
+            public IEnumerable<IGrouping<string, string>> Sources
+            {
+                get
+                {
+                    if (traders.Count > 0)
+                    {
+                        yield return new EffectSourceGroup()
+                        {
+                            _Key = "Traders",
+                            Source = traders.Select(t => GameSettings.GetTrader(t.Item1).SmallIcon()),
+                        };
+                    }
+
+                    if (biomes.Count > 0)
+                    {
+                        yield return new EffectSourceGroup()
+                        {
+                            _Key = "Biomes",
+                            Source = biomes.Select(biome => GameSettings.GetBiome(biome).SmallIcon()),
+                        };
+                    }
+                    if (orders.Count > 0)
+                    {
+                        yield return new EffectSourceGroup()
+                        {
+                            _Key = "Orders",
+                            Source = orders.Select(order => GameSettings.GetOrder(order).SmallIcon()),
+                        };
+                    }
+                }
+            }
         }
 
         private static readonly Dictionary<string, EffectSource> effectSources = new();
 
-        public static EffectSource BiomeEffect(EffectModel effect, string biome)
+        private static EffectSource GetEffectSource(EffectModel effect)
         {
             if (!effectSources.TryGetValue(effect.Name, out EffectSource source))
             {
                 source = new() { model = effect };
                 effectSources[effect.Name] = source;
             }
-
-            source.biomes.Add(biome);
-
             return source;
         }
-
         private static void DumpCornerstones(StringBuilder index)
         {
             index.AppendLine($@"<html>{HTML_HEAD}<body>
@@ -559,20 +673,45 @@ namespace BubbleStormTweaks
             {
                 foreach (var effect in biome.seasons.SeasonRewards.SelectMany(season => season.effectsTable.effects).Select(tableEntry => tableEntry.effect))
                 {
-                    BiomeEffect(effect, biome.Name);
+                    GetEffectSource(effect).biomes.Add(biome.Name);
                 }
             }
 
-            foreach (var source in effectSources.Values)
+            foreach (var trader in GameSettings.traders)
+            {
+                foreach (var effect in trader.merchandise)
+                {
+                    GetEffectSource(effect.reward).traders.Add((trader.Name, effect.chance));
+                }
+            }
+
+            var m = GameSettings.GetEffect("SE Slow Woodcutting For Meat") as HookedEffectModel;
+            foreach (var hooked in m.instantEffects)
+            {
+                if (hooked is ProductionRateEffectModel rate)
+                    LogInfo(rate.amount);
+            }
+
+            foreach (var source in effectSources.Values.Where(v => v.biomes.Count > 0))
             {
                 var effect = source.model;
                 index.AppendLine($@"<div class=""cornerstone"">");
-                index.AppendLine($@"<a class=""section-anchor"" href=""#{effect.Name.Sane()}"" id=""{effect.Name.Sane()}""><div>{effect.GetIcon().Small()}<h3>{effect.Name.StripCategory()}</h3></div></a>");
+                index.AppendLine($@"<a class=""section-anchor"" href=""#{effect.Name.Sane()}"" id=""{effect.Name.Sane()}""><div>{effect.SmallIcon()}<h3>{effect.DisplayName}</h3></div></a>");
                 index.AppendLine($@"<p>{effect.Description}</p>");
-                index.AppendLine($@"<h4>Seasonal reward in:</h4><ul>");
+
+
+                if (source.traders.Count > 0)
+                {
+                    index.AppendLine($@"<h4>Sold by:</h4><div class=""biome-reward-container"">");
+                    foreach (var (trader, chance) in source.traders)
+                        index.AppendLine($@"<span class=""biome-reward"">{trader} ({chance}%)</span>");
+                    index.AppendLine($@"</div>");
+                }
+
+                index.AppendLine($@"<h4>Seasonal reward in:</h4><div class=""biome-reward-container"">");
                 foreach (var biome in source.biomes)
-                    index.AppendLine($@"<li>{biome}</li>");
-                index.AppendLine($@"</ul>");
+                    index.AppendLine($@"<span class=""biome-reward"">{biome}</span>");
+                index.AppendLine($@"</div>");
                 index.AppendLine($@"</div>");
             }
             //{
@@ -883,7 +1022,7 @@ a {padding-left: 4px;}
 
             txt.AppendLine(@"</header> <main><div>");
 
-            txt.AppendLine($@"{biome.icon.Normal()} <h2>{biome.displayName.Text}</h2>");
+            txt.AppendLine($@"{biome.SmallIcon()} <h2>{biome.displayName.Text}</h2>");
             txt.AppendLine($@"<p>{biome.description}</p>");
 
             txt.AppendLine($@"<details>");
@@ -894,7 +1033,7 @@ a {padding-left: 4px;}
             {
                 float total = biome.newcomers.races.Sum(w => w.weight);
                 foreach (var nc in biome.newcomers.races)
-                    AddGridRow(txt, $"{nc.race.roundIcon.Small()} {nc.race.Name}", "", $"{(int)(100 * (nc.weight / (float)total))}%");
+                    AddGridRow(txt, $"{nc.race.roundIcon.Small("race")} {nc.race.Name}", "", $"{(int)(100 * (nc.weight / (float)total))}%");
             }
             txt.AppendLine($@"</div>");
 
@@ -909,7 +1048,7 @@ a {padding-left: 4px;}
                 txt.AppendLine($@"<div style=""grid-column: 1 / 4;""><b>When city score >= {nc.minCityScore}</b></div>");
                 float total = nc.weights.Sum(w => w.weight);
                 foreach (var trader in nc.weights)
-                    AddGridRow(txt, $"{trader.trader.icon.Small()} {trader.trader.Name}", "", $"{(int)(100 * (trader.weight / (float)total))}%");
+                    AddGridRow(txt, $"{trader.trader.SmallIcon()} {trader.trader.displayName.Text.Safe()}", "", $"{(int)(100 * (trader.weight / (float)total))}%");
                 txt.AppendLine($@"<div style=""grid-column: 1 / 4; height: 32px;""></div>");
             }
             txt.AppendLine($@"</div>");
@@ -971,7 +1110,7 @@ a {padding-left: 4px;}
             txt.AppendLine($@"<div style=""grid-column: 1;"">{v1}</div> <div style=""grid-column: 2;"">{v2}</div> <div style=""grid-column: 3;"">{v3}</div>");
         }
 
-        private static Dictionary<string, List<string>> buildingTagToRace = new();
+        private static Dictionary<string, List<(string, VillagerPerkModel)>> buildingTagToRace = new();
 
         private static Dictionary<string, HashSet<string>> ordersExcludedByBiome = new();
 
@@ -999,9 +1138,43 @@ a {padding-left: 4px;}
 
         private static void DumpEffects(StringBuilder index)
         {
-            //            index.AppendLine($@"<html>{HTML_HEAD}<body>
-            //            <header>{NAV}</header><main>
-            //<div class=""orders-container"">");
+            foreach (var effect in GameSettings.effects)
+            {
+                GetEffectSource(effect);
+            }
+
+            index.AppendLine($@"<html>{HTML_HEAD}<body>
+                        <header>{NAV}</header><main>");
+
+            index.AppendLine($@"<table class=""effects-table"">");
+            index.AppendLine($@"<tr><th>Name</th><th>Sources</th></tr>");
+            foreach (var effectSource in effectSources.Values)
+            {
+                index.AppendLine($@"<tr>");
+
+                index.AppendLine($@"<td><h4>{effectSource.model.DisplayName.Safe()}</h4></td>");
+                index.AppendLine($@"<td class=""effect-source-cell"">");
+                foreach (var source in effectSource.Sources)
+                {
+                    index.AppendLine(@"<div class=""effect-source-container"">");
+                    index.AppendLine(source.Key);
+                    index.AppendLine(String.Join(" ", source));
+                    index.AppendLine(@"</div>");
+                }
+                index.AppendLine($@"</td>");
+
+
+                index.AppendLine($@"</tr>");
+
+                index.AppendLine($@"<tr>");
+                index.AppendLine($@"<td colspan=2 class=""effect-description-cell"">");
+                index.AppendLine($@"<p>{effectSource.model.Description.Safe()}</p>");
+                index.AppendLine($@"</td>");
+                index.AppendLine($@"</tr>");
+            }
+            index.AppendLine($@"</table>");
+
+
             //            foreach (var effect in GameSettings.effects)
             //            {
             //                LogInfo(diff.Name);
@@ -1018,16 +1191,14 @@ a {padding-left: 4px;}
             //                LogInfo("");
 
             //            }
-            //            index.AppendLine(@"</div></main></body>");
-            //            index.AppendLine(@"
             //<style>
             //</style>
             //            <script>
             //            </script>
             //");
 
-            //            index.AppendLine("</html>");
-            //            Write(index, "effects", "index");
+            index.AppendLine(@"</main></body></html>");
+            Write(index, "effects", "index");
         }
 
         private static void DumpOrders(StringBuilder index)
@@ -1054,13 +1225,20 @@ a {padding-left: 4px;}
                     {
                         index.AppendLine($@"<h4>Rewards:</h4>");
                         foreach (var reward in orderLogicSet.rewards)
+                        {
+                            if (reward.Name != null)
+                                GetEffectSource(reward).orders.Add(order.Name);
                             index.AppendLine($@"<div><h5>{reward?.Name ?? "<???>"}</h5></div>");
+                        }
                     }
                     else
                     {
                         index.AppendLine($@"<h4>Rewards:</h4>");
                         foreach (var reward in order.rewards)
+                        {
+                            GetEffectSource(reward).orders.Add(order.Name);
                             index.AppendLine($@"<div><h5>{reward.DisplayName} {reward.GetAmountText()}</h5></div>");
+                        }
                     }
                     index.AppendLine($@"<div><h5>{order.reputationReward.DisplayName} {order.reputationReward.GetAmountText()}</h5></div>");
                     index.AppendLine($@"</div>");
@@ -1236,7 +1414,7 @@ a {padding-left: 4px;}
 
         private static void DumpBuilding(BuildingModel building)
         {
-            var txt = Begin(building.Name, building.Description, building.icon);
+            var txt = Begin(building.Name, building.Description, building.SmallIcon());
 
             foreach (var recipe in recipeById.Values.Where(r => r.buildingModel == building))
             {
@@ -1251,7 +1429,7 @@ a {padding-left: 4px;}
         {
             try
             {
-                var txt = Begin(good.Name, good.Description, good.icon);
+                var txt = Begin(good.Name, good.Description, good.icon.Normal("good-big"));
 
                 if (goodInfo.ContainsKey(good.Name))
                 {
@@ -1263,7 +1441,7 @@ a {padding-left: 4px;}
                     foreach (var creates in FindConsumersOf(good.Name))
                     {
                         if (creates.Key != null)
-                            txt.AppendLine($@"<h4>{creates.Key.icon.Small()}<a href=""{creates.Key.Link()}"">{creates.Key.Name}</a></h4>");
+                            txt.AppendLine($@"<h4>{creates.Key.SmallIcon()}<a href=""{creates.Key.Link()}"">{creates.Key.Name}</a></h4>");
                         else
                             txt.AppendLine($@"<h4>Needs</h4>");
                         txt.AppendLine($@"<div class=""recipe-block"">");
@@ -1301,11 +1479,11 @@ a {padding-left: 4px;}
                 LinkType.Need => null,
                 _ => null,
             };
-            Sprite icon = linkType switch
+            string icon = linkType switch
             {
-                LinkType.Good => recipe.output?.good?.icon,
-                LinkType.Recipe => recipe.output?.good?.icon,
-                LinkType.Building => recipe.buildingModel.icon,
+                LinkType.Good => recipe.output?.good?.SmallIcon(),
+                LinkType.Recipe => recipe.output?.good?.SmallIcon(),
+                LinkType.Building => recipe.buildingModel.SmallIcon(),
                 LinkType.Need => null,
                 _ => null,
             };
@@ -1331,9 +1509,16 @@ a {padding-left: 4px;}
             EndRecipeEmit(txt);
         }
 
+        public static string WikiRoot => @"C:\Users\worce\source\repos\data-wiki-root\data-wiki-raw\";
+
         public static void Write(StringBuilder txt, string directory, string name)
         {
-            File.WriteAllText($@"C:\Users\worce\source\repos\data-wiki-root\data-wiki\{(directory != null ? directory + "\\" : "")}{name.Sane()}.html", txt.ToString());
+            string path = WikiRoot;
+            if (directory != null)
+                path = Path.Combine(path, directory);
+            if (!Directory.Exists(path))
+                Directory.CreateDirectory(path);
+            File.WriteAllText($@"{path}\{name.Sane()}.html", txt.ToString());
         }
 
         public static void Write(Texture2D texture)
@@ -1350,12 +1535,12 @@ a {padding-left: 4px;}
             txt.AppendLine($@"<div class=""result"">{result}</div>");
         }
 
-        private static void BeginRecipeEmit(StringBuilder txt, string title, string tier, string link, bool hidden, Sprite icon, RecipeRaw recipe)
+        private static void BeginRecipeEmit(StringBuilder txt, string title, string tier, string link, bool hidden, string icon, RecipeRaw recipe)
         {
             txt.AppendLine($@"<div class=""recipe-container"">");
             txt.AppendLine($@"<div class=""recipe-header"">");
             if (icon != null)
-                txt.AppendLine(icon.Small());
+                txt.AppendLine(icon);
             txt.Append($@"<h4 class=""recipe-title"">");
             if (link != null)
                 txt.Append($@"<a href=""{link}"">");
@@ -1417,6 +1602,7 @@ a {padding-left: 4px;}
 
         private static string GenerateNav()
         {
+            var now = DateTime.Now;
             return $@"
                 <nav>
                     <a href=""/data-wiki/buildings"">Buildings</a>
@@ -1426,8 +1612,11 @@ a {padding-left: 4px;}
                     <a href=""/data-wiki/cornerstones"">Cornerstones</a>
                     <a href=""/data-wiki/biomes"">Biomes</a>
                     <a href=""/data-wiki/upgrades"">Upgrades</a>
+                    <a href=""/data-wiki/effects"">Effects</a>
+                    <a href=""/data-wiki/console-commands"">Commands</a>
                 </nav>
                  <nav>
+                    <span>Wiki Updated: {now:d/MMM/yy}</span>
                     <span>Game Version: {MainController.Instance.Build.version}</span>
                     <span>Scale costs for difficulty:</span>
                     <select id=""difficulty-select"">
@@ -1443,14 +1632,13 @@ a {padding-left: 4px;}
                 ";
         }
 
-        private static StringBuilder Begin(string name, string description, Sprite icon)
+        private static StringBuilder Begin(string name, string description, string icon)
         {
             StringBuilder txt = new();
-            Write(icon.texture);
             txt.AppendLine($@"<html> {HTML_HEAD} <body>");
 
             txt.AppendLine($@"<header>{NAV}</header><main>");
-            txt.AppendLine($@"<h2>{icon.Normal()}{name}</h2>");
+            txt.AppendLine($@"<h2>{icon}{name}</h2>");
             txt.AppendLine($@"<h4>{description}</h4>");
             return txt;
         }
@@ -1588,6 +1776,7 @@ a {padding-left: 4px;}
         ");
 
             txt.AppendLine(@"</html>");
+
         }
 
         private static string GetTier(string name)
@@ -1632,13 +1821,44 @@ a {padding-left: 4px;}
 
     public static class Ext
     {
+        private static readonly Dictionary<Type, string> Aliases = new Dictionary<Type, string>() {
+                { typeof(byte), "byte" },
+                { typeof(sbyte), "sbyte" },
+                { typeof(short), "short" },
+                { typeof(ushort), "ushort" },
+                { typeof(int), "int" },
+                { typeof(uint), "uint" },
+                { typeof(long), "long" },
+                { typeof(ulong), "ulong" },
+                { typeof(float), "float" },
+                { typeof(double), "double" },
+                { typeof(decimal), "decimal" },
+                { typeof(object), "object" },
+                { typeof(bool), "bool" },
+                { typeof(char), "char" },
+                { typeof(string), "string" },
+                { typeof(void), "void" }
+        };
+        public static string SugarName(this Type type)
+        {
+            if (Aliases.TryGetValue(type, out var name))
+                return name;
+            else
+                return type.Name;
+        }
+        public static string Safe(this string str)
+        {
+            if (str == null) return "[null]";
+
+            return str.Replace(">Missing key<", "[unknown]");
+        }
         private static Regex goodWithCategory = new(@"\[(.*?)\] (.*)");
 
         public static string Div(this string contents) => contents.Surround("div");
 
         public static string Cost(this GoodRef good, string costType)
         {
-            return @$"<span class=""cost-{costType}"" data-base-cost=""{good.amount}"">{good.amount}</span>× {good.Icon.Small()} <a href=""{good.good.Link()}""> {good.good.displayName.Text}</a>";
+            return @$"<span class=""cost-{costType}"" data-base-cost=""{good.amount}"">{good.amount}</span>× {good.SmallIcon()} <a href=""{good.good.Link()}""> {good.good.displayName.Text}</a>";
         }
 
         public static string AsSummary(this string str) => str.Surround("summary");
@@ -1667,7 +1887,7 @@ a {padding-left: 4px;}
         {
             if (effect is GoodsEffectModel goods)
             {
-                return $@"{goods.good.amount}× {effect.GetIcon().Small()} <a href=""{goods.good.good.Link()}"">{goods.good.good.Name.StripCategory()}</a>";
+                return $@"{goods.good.amount}× {goods.good.SmallIcon()} <a href=""{goods.good.good.Link()}"">{goods.good.good.Name.StripCategory()}</a>";
             }
             else
             {
@@ -1719,39 +1939,120 @@ a {padding-left: 4px;}
                 throw new NotSupportedException();
         }
 
-        public static string ImageScaled(this Sprite icon, int target, string attribs = "")
+        public class SpriteReference : IEquatable<SpriteReference>
+        {
+            public string group;
+            public string source_image;
+            public float source_x, source_y;
+            public float source_w, source_h;
+
+            public int out_w, out_h;
+
+            public string Render => $"{group};{source_image};{source_x};{source_y};{source_w};{source_h};{out_w};{out_h}";
+
+            public override bool Equals(object obj)
+            {
+                return Equals(obj as SpriteReference);
+            }
+
+            public bool Equals(SpriteReference other)
+            {
+                return other is not null &&
+                       group == other.group &&
+                       source_image == other.source_image &&
+                       source_x == other.source_x &&
+                       source_y == other.source_y &&
+                       source_w == other.source_w &&
+                       source_h == other.source_h &&
+                       out_w == other.out_w &&
+                       out_h == other.out_h;
+            }
+
+            public override int GetHashCode()
+            {
+                int hashCode = 1965452847;
+                hashCode = hashCode * -1521134295 + group.GetHashCode();
+                hashCode = hashCode * -1521134295 + source_image.GetHashCode();
+                hashCode = hashCode * -1521134295 + source_x.GetHashCode();
+                hashCode = hashCode * -1521134295 + source_y.GetHashCode();
+                hashCode = hashCode * -1521134295 + source_w.GetHashCode();
+                hashCode = hashCode * -1521134295 + source_h.GetHashCode();
+                hashCode = hashCode * -1521134295 + out_w.GetHashCode();
+                hashCode = hashCode * -1521134295 + out_h.GetHashCode();
+                return hashCode;
+            }
+
+            public static bool operator ==(SpriteReference left, SpriteReference right)
+            {
+                return EqualityComparer<SpriteReference>.Default.Equals(left, right);
+            }
+
+            public static bool operator !=(SpriteReference left, SpriteReference right)
+            {
+                return !(left == right);
+            }
+        }
+
+        public static Dictionary<SpriteReference, int> spritesUsed = new();
+
+        public static string ImageScaled(this Sprite icon, string group, int target, string title = null)
         {
             Dumper.Write(icon.texture);
             float scale = (icon.textureRect.width / target);
             int w = target;
             int h = target;
-            return $@"<img {attribs} src=""../img/1x1.png"" width={w} height={h} style=""background: url(../img/{icon.texture.name.Replace(" ", "%20").Replace("'", "\\'")}.png); background-position: -{icon.textureRect.x / scale}px -{(icon.texture.height - icon.textureRect.y - icon.textureRect.height) / scale}px; background-size: {icon.texture.width / scale}px {icon.texture.height / scale}px;""/>";
+            List<(string, string)> attribs = new();
+            if (title != null)
+                attribs.Add(("title", title));
+
+            SpriteReference spriteRef = new()
+            {
+                group = group,
+                source_image = icon.texture.name,
+                source_w = icon.textureRect.width,
+                source_h = icon.textureRect.height,
+                source_x = icon.textureRect.x,
+                source_y = icon.textureRect.y,
+                out_w = w,
+                out_h = h,
+            };
+
+            if (!spritesUsed.TryGetValue(spriteRef, out int id))
+            {
+                id = spritesUsed.Count;
+                spritesUsed[spriteRef] = id;
+            }
+
+            return $@"<img {string.Join(" ", attribs.Select(attrib => @$"{attrib.Item1}=""{attrib.Item2}"""))} src=""{id}.IMG_SRC"" width={w} height={h} style=""object-position: {id}.IMG_X {id}.IMG_Y; object-fit: none; width: {w}px; height: {h}px;""/>";
         }
 
-        public static string Normal(this Sprite sprite)
-        {
-            return sprite.ImageScaled(128);
-        }
 
-        public static string Small(this Sprite sprite)
-        {
-            return sprite.ImageScaled(32);
-        }
+        public static string SmallIcon(this TraderModel trader) => trader.icon.Small("trader", trader.displayName.Text);
+        public static string SmallIcon(this BiomeModel biome) => biome.icon.Small("biome", biome.displayName.Text);
+        public static string SmallIcon(this OrderModel order) => order.GetIcon().Small("order", order.displayName.Text);
+        public static string SmallIcon(this GoodModel good) => good.icon.Small("good", good.displayName.Text);
+        public static string SmallIcon(this GoodRef good) => good.good.SmallIcon();
+        public static string SmallIcon(this BuildingModel b) => b.icon.Small("building", b.displayName.Text);
+        public static string SmallIcon(this EffectModel e) => e.GetIcon().Small("effect", e.DisplayName);
+
+
+
+
+        public static string Small(this Sprite sprite, string group, string title = null) => sprite.ImageScaled(group, 32, title.Safe());
+        public static string Normal(this Sprite sprite, string group, string title = null) => sprite.ImageScaled(group, 128, title.Safe());
     }
 
-    public static class DumpPatch
+    public class DumpPatch : IKeybindInjector
     {
-
         public static InputAction dumpACtion;
 
-        [HarmonyPatch(typeof(InputConfig), MethodType.Constructor)]
-        [HarmonyPostfix]
-        private static void InputConfig_ctor()
+        public void Inject()
         {
             dumpACtion = new("select_race_1", InputActionType.Button, expectedControlType: "Button");
             dumpACtion.AddBinding("<Keyboard>/tab", groups: "Keyboard");
+            Plugin.LogInfo("Added binding for dumper");
 
-            //dumpACtion.performed += Dumper.DoDump;
+            dumpACtion.performed += Dumper.DoDump;
 
             dumpACtion.Enable();
         }
