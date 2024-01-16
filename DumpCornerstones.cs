@@ -14,6 +14,8 @@ namespace BubbleStormTweaks
 
     public static class CornerstoneDumper{
 
+        public static HashSet<string> allBiomes = new();
+
         public static void Dump(StringBuilder index){
             var cornerstones = GatherCornerstones();
             index.AppendLine($@"<html>{Dumper.HTML_HEAD}<body> <header>{Dumper.NAV}</header><main><div>");
@@ -30,6 +32,7 @@ namespace BubbleStormTweaks
                 if(biomeName.Contains("Tutorial") || biomeName.Contains("Capital")){
                     continue;
                 }
+                allBiomes.Add(biomeName);
                 foreach (var effectHolder in biome.seasons.SeasonRewards.SelectMany(season => season.effectsTable.effects)){
                     GetOrAdd(stones, effectHolder, biome);
                 }
@@ -46,7 +49,12 @@ namespace BubbleStormTweaks
         }
 
         private static void DumpTable(StringBuilder index, IEnumerable<Cornerstone> cornerstones){
-            foreach (var Cornerstone in cornerstones){
+            index.Tagged("h1", "Epic");
+            foreach (var Cornerstone in cornerstones.Where(cs=>cs.Rarity == EffectRarity.Epic)){
+                index.Div("cornerstone", Cornerstone.Dump);
+            }
+            index.Tagged("h1", "Legendary");
+            foreach (var Cornerstone in cornerstones.Where(cs=>cs.Rarity == EffectRarity.Legendary)){
                 index.Div("cornerstone", Cornerstone.Dump);
             }
         }
@@ -55,7 +63,7 @@ namespace BubbleStormTweaks
 
     public class Cornerstone : IComparable<Cornerstone>{
         private EffectsTableEntity effectHolder;
-        public List<string> biomes = new();
+        public HashSet<string> biomes = new();
 
         public Cornerstone(EffectsTableEntity effectHolder){
             this.effectHolder = effectHolder;
@@ -69,6 +77,9 @@ namespace BubbleStormTweaks
             index.Tagged("div", NameWithIcon);
             index.Append("</a>");
             index.Tagged("p", Effect.Description);
+            if(biomes.Count < CornerstoneDumper.allBiomes.Count){
+                index.Tagged("p", "<em>Not available in</em>: " + (string.Join(", ", CornerstoneDumper.allBiomes.Except(biomes))));
+            }
         }
         
         private void NameWithIcon(StringBuilder index){
