@@ -126,6 +126,9 @@ namespace BubbleStormTweaks
             DumpEffects(index);
             index.Clear();
 
+            TraderDumper.Dump(index);
+            index.Clear();
+
             File.WriteAllLines(Path.Combine(WikiRoot, "sprites_used.txt"), Ext.spritesUsed.Select(s => s.Render));
 
             LogInfo(" === DUMP COMPLETE ===");
