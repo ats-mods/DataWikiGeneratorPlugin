@@ -22,7 +22,7 @@ namespace BubbleStormTweaks
         }
 
         private static void DumpTable(StringBuilder index){
-            index.AppendLine(Html.TableColumns("Name", "Sells", "Buys", "Cornerstones (weighted)"));
+            index.AppendLine(Html.TableColumns("Name", "Sells", "Buys", "Merchandise (weighted)", "Assault Consequences"));
 
             foreach(var model in Plugin.GameSettings.traders){
                 var trader = new Trader(model);
@@ -43,6 +43,7 @@ namespace BubbleStormTweaks
             index.Tagged("td", DumpPotentialGoods);
             index.Tagged("td", DumpDesiredGoods);
             index.Tagged("td", DumpMerchandise);
+            index.Tagged("td", DumpWhenAssaulted);
         }
 
         private void DumpNameInfo(StringBuilder index){
@@ -50,6 +51,20 @@ namespace BubbleStormTweaks
             index.Tagged("div", @$"<b>Number of goods:</b> {model.goodsAmount.x}-{model.goodsAmount.y}");
             index.Tagged("div", @$"<b>Arrival time:</b> {model.arrivalTime}");
             index.Tagged("div", @$"<b>Staying time:</b> {model.stayingTime}");
+        }
+
+        private void DumpWhenAssaulted(StringBuilder index){
+            if (!model.canAssault){
+                index.Tagged("em", "Can't be assaulted");
+                return;
+            }
+
+            index.Tagged("div", @$"<b>Villagers killed:</b> {model.villagersKilledInAssault.x}-{model.villagersKilledInAssault.y}");
+            index.Tagged("div", @$"<b>Goods stolen:</b> {model.percentageOfStolenGoods:P0}");
+            index.Tagged("div", @$"<b>Merchandise stolen:</b> {model.percentageOfStolenEffects:P0}");
+            foreach(var effect in model.assaultEffects){
+                index.Tagged("div", @$"<b>{effect.DisplayName}:</b> {effect.FormatedDescription}");
+            }
         }
 
         private void DumpPotentialGoods(StringBuilder index){
