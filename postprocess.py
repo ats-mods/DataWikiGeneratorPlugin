@@ -1,9 +1,9 @@
 from dataclasses import dataclass
 from pathlib import Path
 from PIL import Image
-import sys
+import sys, os
 
-BASE_PATH = "D:\\UMM\\atsdata\\0.50\\sharedassets0.assets\\ExportedProject\\Assets\\Texture2D"
+BASE_PATH = "D:\\UMM\\atsdata\\0.51\\sharedassets0.assets\\ExportedProject\\Assets\\Texture2D"
 OUT_PATH = "D:\\UMM\\projects\\data-wiki\\img"
 SPRITES_FILE = "C:\\Against the Storm\\data-wiki-raw\\sprites_used.txt"
 REPLACE = False
@@ -59,6 +59,8 @@ class SpriteReference:
 
 
 if __name__ == '__main__':
+
+    os.makedirs(BASE_PATH, exist_ok=True)
     
     # Open the text file containing sprite references
     with open(SPRITES_FILE, 'r') as f:

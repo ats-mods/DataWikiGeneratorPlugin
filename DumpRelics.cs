@@ -35,7 +35,7 @@ namespace BubbleStormTweaks
                 return new("Forbidden", 1);
             if (relic.dangerLevel == DangerLevel.Dangerous)
                 return new("Dangerous", 2);
-            if (relic.name.Contains("Treasure Stag") || relic.name.Contains("Rainpunk Drill"))
+            if (relic.name.Contains("Treasure Stag") || relic.name.Contains("Rainpunk Drill") || relic.name.Contains("Monolith"))
                 return new("Small", 3);
             if (relic.displayName.Text.Contains("Encampment") || relic.displayName.Text.Contains("Abandoned Cache"))
                 return new ("Other", 4);
