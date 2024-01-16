@@ -2044,17 +2044,17 @@ a {padding-left: 4px;}
 
     public class DumpPatch : IKeybindInjector
     {
-        public static InputAction dumpACtion;
+        public static InputAction dumpAction;
 
         public void Inject()
         {
-            dumpACtion = new("select_race_1", InputActionType.Button, expectedControlType: "Button");
-            dumpACtion.AddBinding("<Keyboard>/tab", groups: "Keyboard");
+            dumpAction = new("select_race_1", InputActionType.Button, expectedControlType: "Button");
+            dumpAction.AddBinding("<Keyboard>/tab", groups: "Keyboard");
             Plugin.LogInfo("Added binding for dumper");
 
-            dumpACtion.performed += Dumper.DoDump;
+            dumpAction.performed += Dumper.DoDump;
 
-            dumpACtion.Enable();
+            dumpAction.Enable();
         }
     }
 }

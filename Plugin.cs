@@ -51,12 +51,6 @@ namespace BubbleStormTweaks
         public SimpleString New(string name, string value) => new($"{prefix}.{name}", value);
     }
 
-
-    public interface ISettingInjector
-    {
-        public void Inject(Settings settings);
-    }
-
     public interface IKeybindInjector
     {
         public void Inject();
@@ -70,19 +64,12 @@ namespace BubbleStormTweaks
         public Harmony harmony;
         public static Plugin Instance;
 
-        public static bool doInjectSettings = false;
-
         public static void LogInfo(object data)
         {
-            if (data == null)
-            {
-                Instance.Logger.LogInfo("<<NULL>>");
-            }
-            else
-            {
-                Instance.Logger.LogInfo(data);
-            }
+            if (data == null) Instance.Logger.LogInfo("<<NULL>>");
+            else Instance.Logger.LogInfo(data);
         }
+
         public static void LogInfo(IEnumerable<object> seq)
         {
             foreach (var obj in seq)
@@ -94,27 +81,12 @@ namespace BubbleStormTweaks
         private void Awake()
         {
             Instance = this;
-            // Plugin startup logic
             Logger.LogInfo($"Plugin {PluginInfo.PLUGIN_GUID} is loaded");
-
             harmony = new Harmony("bubblestorm");
-
             harmony.PatchAll(typeof(Plugin));
-
         }
 
         public static Settings GameSettings => MainController.Instance.Settings;
-
-        private static readonly List<SimpleString> allStrings = new();
-
-        //[HarmonyPatch(typeof(Settings))]
-        //[HarmonyPatch(nameof(Settings.GetBuilding))]
-        //[HarmonyPrefix]
-        //public static void Settings_GetBuilding(string modelName)
-        //{
-        //    Plugin.LogInfo("GetBuilding: " + modelName);
-
-        //}
 
         private static IEnumerable<T> Injectors<T>() where T : class
         {
@@ -130,42 +102,7 @@ namespace BubbleStormTweaks
         [HarmonyPostfix]
         private static void InitSettings()
         {
-            var stringProviders = Assembly.GetAssembly(typeof(Plugin)).GetTypes().Where(t => t.GetCustomAttribute<StringProvider>() != null).ToArray();
-
-            foreach (var stringProvider in stringProviders)
-            {
-                foreach (var field in stringProvider.GetFields(System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public).Where(f => f.FieldType == typeof(SimpleString)))
-                {
-                    var str = field.GetValue(null) as SimpleString;
-                    str.Key = $"{stringProvider.FullName}.{field.Name}";
-                    allStrings.Add(str);
-                }
-            }
-
-            if (doInjectSettings)
-            {
-                foreach (var injector in Injectors<ISettingInjector>())
-                {
-                    injector.Inject(GameSettings);
-                }
-
-                InvalidateSettingsCaches();
-            }
-        }
-
-        private static void InvalidateSettingsCaches()
-        {
-            //Invalidate all Settings caches since mods can add new models after the caches have been created for the first time
-            var cacheType = typeof(ModelCache<>);
-            foreach (var cacheField in typeof(Settings).GetFields(BindingFlags.Instance | BindingFlags.NonPublic).Where(f => f.FieldType.IsGenericType))
-            {
-                var genericType = cacheField.FieldType.GetGenericTypeDefinition();
-                if (cacheType == genericType)
-                {
-                    object cache = cacheField.GetValue(GameSettings);
-                    cache.GetType().GetField("cache", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(cache, null);
-                }
-            }
+            InjectKeybindings();
         }
 
         [HarmonyPatch(typeof(InputConfig), MethodType.Constructor)]
@@ -176,24 +113,6 @@ namespace BubbleStormTweaks
             {
                 injector.Inject();
             }
-        }
-
-        [HarmonyPatch(typeof(AppServices), nameof(AppServices.CreateServices))]
-        [HarmonyWrapSafe]
-        [HarmonyPostfix]
-        private static void InitServices(AppServices __instance)
-        {
-
-            __instance.TextsService.OnTextsChanged.Subscribe(new Action(() =>
-            {
-                var s = MB.TextsService as TextsService;
-                s.texts["MenuUI_KeyBindings_Action_select_race_1"] = "Pick Next Race";
-
-                foreach (var str in allStrings)
-                {
-                    s.texts[str.Key] = str.Value;
-                }
-            }));
         }
     }
 }
