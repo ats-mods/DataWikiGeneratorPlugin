@@ -30,6 +30,7 @@ namespace BubbleStormTweaks
     {
         public static void LogInfo(object data) => Plugin.LogInfo(data);
         public static Settings GameSettings => Plugin.GameSettings;
+        public static string WikiRoot => @"C:\Against the Storm\data-wiki-raw";
 
         public class RewardData
         {
@@ -1509,8 +1510,6 @@ a {padding-left: 4px;}
             EndRecipeEmit(txt);
         }
 
-        public static string WikiRoot => @"C:\Users\worce\source\repos\data-wiki-root\data-wiki-raw\";
-
         public static void Write(StringBuilder txt, string directory, string name)
         {
             string path = WikiRoot;
@@ -2048,7 +2047,7 @@ a {padding-left: 4px;}
 
         public void Inject()
         {
-            dumpAction = new("select_race_1", InputActionType.Button, expectedControlType: "Button");
+            dumpAction = new("perform_data_dump", InputActionType.Button, expectedControlType: "Button");
             dumpAction.AddBinding("<Keyboard>/tab", groups: "Keyboard");
             Plugin.LogInfo("Added binding for dumper");
 
